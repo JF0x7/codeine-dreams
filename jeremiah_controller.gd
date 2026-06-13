@@ -1,81 +1,42 @@
 extends CharacterBody3D
 
-# --- Animation ---
-@onready var anim_player: AnimationPlayer = $AnimationTree/AnimationPlayer
-@onready var anim_tree: AnimationTree = $AnimationTree
-@onready var anim_state: AnimationNodeStateMachinePlayback = anim_tree.get("parameters/playback")
+@export var speed := 4.0
+@export var acceleration := 10.0
+@export var rotation_speed := 10.0 # Controls how fast the character turns
 
-# --- Camera ---
-@onready var cam: Camera3D = $SpringArm3D/Camera3D
+@onready var anim_tree: AnimationTree = $Jeremiah/AnimationTree
 
-# --- Movement settings ---
-const MOVE_SPEED := 4.0
-const ACCEL := 10.0
-const DECEL := 12.0
-const ROT_SPEED := 8.0
+# We declare the variable here, but assign it in _ready() to prevent null pointer crashes
+var anim_state: AnimationNodeStateMachinePlayback
 
-var speed: float = 4.5
-var jump_force: float = 4.5
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+func _ready() -> void:
+	# Safely initialize the animation playback state machine
+	if anim_tree:
+		anim_state = anim_tree.get("parameters/playback")
+		anim_tree.active = true # Forces the tree to be active when the game starts
 
-# --- Mouse look ---
-var mouse_sensitivity: float = 0.003
-var rotation_x: float = 0.0
-var rotation_y: float = 0.0
+func _physics_process(delta: float) -> void:
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 
-func _ready():
-	# Camera + mouse
-	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	cam.current = true
+	# Handle Movement and Transitions
+	if direction.length() > 0.1:
+		velocity.x = lerp(velocity.x, direction.x * speed, acceleration * delta)
+		velocity.z = lerp(velocity.z, direction.z * speed, acceleration * delta)
 
-	# Animation
-	anim_tree.active = true
-	anim_player.play("Idle")
+		# Smoothly rotate the character toward the movement direction
+		var target_transform := global_transform.looking_at(global_transform.origin + direction, Vector3.UP)
+		global_transform = global_transform.interpolate_with(target_transform, rotation_speed * delta)
 
-func _input(event):
-	if event is InputEventMouseMotion:
-		rotation_y -= event.relative.x * mouse_sensitivity
-		rotation_x -= event.relative.y * mouse_sensitivity
-		rotation_x = clamp(rotation_x, deg_to_rad(-60), deg_to_rad(30))
-		cam.rotation = Vector3(rotation_x, rotation_y, 0)
-
-func _physics_process(delta):
-	# -------------------------
-	# MOVEMENT INPUT
-	# -------------------------
-	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var move_dir = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-
-	# -------------------------
-	# JUMP + GRAVITY
-	# -------------------------
-	if not is_on_floor():
-		velocity.y -= gravity * delta
-	elif Input.is_action_just_pressed("jump"):
-		velocity.y = jump_force
-
-	# -------------------------
-	# GTA‑STYLE MOVEMENT
-	# -------------------------
-	if move_dir.length() > 0.1:
-		# Accelerate
-		velocity.x = lerp(velocity.x, move_dir.x * MOVE_SPEED, ACCEL * delta)
-		velocity.z = lerp(velocity.z, move_dir.z * MOVE_SPEED, ACCEL * delta)
-
-		# Rotate character toward movement direction
-		var target_rot = atan2(-move_dir.x, -move_dir.z)
-		rotation.y = lerp_angle(rotation.y, target_rot, ROT_SPEED * delta)
-
-		# Animations
-		anim_player.play("Walk")
-		anim_state.travel("Walk")
+		# Switch to Walk animation (Ensure this matches your lowercase/uppercase graph names!)
+		if anim_state:
+			anim_state.travel("walk")
 	else:
-		# Decelerate
-		velocity.x = move_toward(velocity.x, 0, DECEL * delta)
-		velocity.z = move_toward(velocity.z, 0, DECEL * delta)
+		velocity.x = lerp(velocity.x, 0.0, acceleration * delta)
+		velocity.z = lerp(velocity.z, 0.0, acceleration * delta)
 
-		# Animations
-		anim_player.play("Idle")
-		anim_state.travel("Idle")
+		# Switch to Idle animation (Ensure this matches your lowercase/uppercase graph names!)
+		if anim_state:
+			anim_state.travel("idle")
 
 	move_and_slide()

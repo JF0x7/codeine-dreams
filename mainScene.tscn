@@ -18,39 +18,18 @@ sky_material = SubResource("ProceduralSkyMaterial_a0tk4")
 background_mode = 2
 sky = SubResource("Sky_r3fl7")
 
+[sub_resource type="ArrayMesh" id="ArrayMesh_6mfv6"]
+
+[sub_resource type="Skin" id="Skin_6mfv6"]
+
 [sub_resource type="Animation" id="Animation_61od6"]
 length = 0.001
 
 [sub_resource type="Animation" id="Animation_2qqqv"]
 resource_name = "idle"
 
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6mfv6"]
-animation = &"idle"
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_2qqqv"]
-animation = &"mixamo_com"
-
-[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_6mfv6"]
-states/End/position = Vector2(410, 100)
-states/idle/node = SubResource("AnimationNodeAnimation_6mfv6")
-states/idle/position = Vector2(337, 100)
-states/walk/node = SubResource("AnimationNodeAnimation_2qqqv")
-states/walk/position = Vector2(274, 100)
-
 [sub_resource type="Animation" id="Animation_6mfv6"]
 resource_name = "walk"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("../AnimationTree:tree_root")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [SubResource("AnimationNodeStateMachine_6mfv6")]
-}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_we1jl"]
 _data = {
@@ -60,15 +39,24 @@ _data = {
 &"walk": SubResource("Animation_6mfv6")
 }
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_61od6"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_hr5et"]
+animation = &"idle"
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_a0tk4"]
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_61od6"]
+animation = &"mixamo_com"
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_r3fl7"]
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_61od6"]
+states/Start/position = Vector2(222, 94)
+states/idle/node = SubResource("AnimationNodeAnimation_hr5et")
+states/idle/position = Vector2(283, 94)
+states/mixamo_com/node = SubResource("AnimationNodeAnimation_61od6")
+states/mixamo_com/position = Vector2(361, 99)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_jka67"]
 radius = 0.9790039
 height = 2.501831
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_61od6"]
 
 [node name="Node3D" type="Node3D" unique_id=1885946674]
 
@@ -76,41 +64,45 @@ height = 2.501831
 environment = SubResource("Environment_jka67")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=547643223]
-transform = Transform3D(0.8660254, 0.3535534, 0.3535534, 0, 0.7071068, -0.7071068, -0.5, 0.61237246, 0.61237246, 0, 0, 0)
+transform = Transform3D(0.8660254, 0.3535534, 0.3535534, 0, 0.7071068, -0.7071068, -0.5, 0.61237246, 0.61237246, 0, 2.1008534, -2.9827461)
 light_energy = 2.0
 shadow_enabled = true
 
 [node name="Jeremiah Controller" type="CharacterBody3D" parent="." unique_id=533390010]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9128666, 1.8333819)
 script = ExtResource("1_61od6")
 
-[node name="AnimationTree" type="AnimationTree" parent="Jeremiah Controller" unique_id=198412359]
-root_node = NodePath(".")
-advance_expression_base_node = NodePath("..")
-anim_player = NodePath("AnimationPlayer")
+[node name="Jeremiah" parent="Jeremiah Controller" unique_id=1886577485 instance=ExtResource("2_6mfv6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6523795, -0.9909955, -0.44909847)
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Jeremiah Controller/AnimationTree" unique_id=1216710060]
+[node name="bone" parent="Jeremiah Controller/Jeremiah/Skeleton3D/bone" parent_id_path=PackedInt32Array(1886577485, 1521268333) index="0" unique_id=95973008]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.377713, -1.4998804, -1.9951437)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Jeremiah Controller/Jeremiah" unique_id=153573950]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("ArrayMesh_6mfv6")
+skin = SubResource("Skin_6mfv6")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Jeremiah Controller/Jeremiah" unique_id=1216710060]
 libraries/ = SubResource("AnimationLibrary_we1jl")
 autoplay = &"idle"
 
-[node name="SpringArm3D" type="SpringArm3D" parent="Jeremiah Controller" unique_id=1999252780]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
-shape = SubResource("SphereShape3D_61od6")
-spring_length = 4.0
+[node name="AnimationTree" type="AnimationTree" parent="Jeremiah Controller/Jeremiah" unique_id=704082577]
+tree_root = SubResource("AnimationNodeStateMachine_61od6")
+anim_player = NodePath("../AnimationPlayer")
 
-[node name="Camera3D" type="Camera3D" parent="Jeremiah Controller/SpringArm3D" unique_id=77054463]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0752126, 1.9175649, 2.7971423)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Jeremiah Controller" unique_id=1999786407]
+transform = Transform3D(1, 0, 0, 0, 0.9804742, -0.19664781, 0, 0.19664781, 0.9804742, 0.76299405, -2.6515021, -2.6259832)
+shape = SubResource("CapsuleShape3D_jka67")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=77054463]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3350443, -0.5566392, 3.4673345)
 doppler_tracking = 2
 current = true
 
-[node name="terrain" type="MeshInstance3D" parent="Jeremiah Controller" unique_id=1990758700]
-transform = Transform3D(50, 0, 0, 0, 50, 0, 0, 0, 50, 0, -1, 0)
-mesh = SubResource("PlaneMesh_a0tk4")
-surface_material_override/0 = SubResource("StandardMaterial3D_r3fl7")
+[node name="SpringArm3D" type="SpringArm3D" parent="Camera3D" unique_id=1999252780]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.41209948, -0.47006965, -3.3035073)
+shape = SubResource("SphereShape3D_61od6")
+spring_length = 4.0
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Jeremiah Controller" unique_id=1999786407]
-transform = Transform3D(1, 0, 0, 0, 0.9804742, -0.19664781, 0, 0.19664781, 0.9804742, -0.116671085, 0.92267966, -0.045180082)
-shape = SubResource("CapsuleShape3D_jka67")
-
-[node name="Jeremiah2" parent="Jeremiah Controller" unique_id=2028234471 instance=ExtResource("2_6mfv6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+[editable path="Jeremiah Controller/Jeremiah"]
