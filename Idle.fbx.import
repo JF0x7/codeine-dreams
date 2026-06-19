@@ -13,9 +13,9 @@ dest_files=["res://.godot/imported/Idle.fbx-53655b07ca29927fc9e04e11254df528.res
 
 [params]
 
-nodes/root_type=""
+nodes/root_type="Skeleton3D"
 nodes/root_name=""
-nodes/root_script=null
+nodes/root_script=Resource("uid://dh5sh62tw1quj", "res://jeremiah_controller.gd")
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
@@ -37,13 +37,7 @@ import_script/path=""
 materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
-_subresources={
-"nodes": {
-"PATH:Skeleton3D/Mesh_0": {
-"import/skip_import": true
-}
-}
-}
+_subresources={}
 fbx/importer=0
 fbx/allow_geometry_helper_nodes=false
 fbx/embedded_image_handling=1

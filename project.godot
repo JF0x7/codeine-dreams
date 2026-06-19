@@ -15,6 +15,10 @@ run/main_scene="uid://4vd4r7wsh2f4"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/sky_3d/plugin.cfg", "res://addons/terrain_3d/plugin.cfg")
+
 [input]
 
 move_forward={

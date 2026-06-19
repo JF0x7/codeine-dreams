@@ -1,42 +1,49 @@
 extends CharacterBody3D
 
-@export var speed := 4.0
-@export var acceleration := 10.0
-@export var rotation_speed := 10.0 # Controls how fast the character turns
+@onready var anim_player: AnimationPlayer = get_node_or_null("JeremiahCon/Jeremiah/Skeleton3D/AnimationPlayer")
+@onready var cam: Camera3D = $Camera3D
 
-@onready var anim_tree: AnimationTree = $Jeremiah/AnimationTree
+const SPEED := 4.0
+const ACCEL := 10.0
+const DECEL := 12.0
+const ROT_SPEED := 8.0
 
-# We declare the variable here, but assign it in _ready() to prevent null pointer crashes
-var anim_state: AnimationNodeStateMachinePlayback
+var gravity : float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-func _ready() -> void:
-	# Safely initialize the animation playback state machine
-	if anim_tree:
-		anim_state = anim_tree.get("parameters/playback")
-		anim_tree.active = true # Forces the tree to be active when the game starts
+func _ready():
+	if anim_player == null:
+		push_warning("AnimationPlayer not found at path: JeremiahCon/Jeremiah/Skeleton3D/AnimationPlayer")
 
-func _physics_process(delta: float) -> void:
-	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+func _physics_process(delta):
+	var input_vec := Vector2(
+		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+		Input.get_action_strength("move_back") - Input.get_action_strength("move_forward")
+	)
 
-	# Handle Movement and Transitions
-	if direction.length() > 0.1:
-		velocity.x = lerp(velocity.x, direction.x * speed, acceleration * delta)
-		velocity.z = lerp(velocity.z, direction.z * speed, acceleration * delta)
+	var move_dir := (transform.basis * Vector3(input_vec.x, 0, input_vec.y)).normalized()
 
-		# Smoothly rotate the character toward the movement direction
-		var target_transform := global_transform.looking_at(global_transform.origin + direction, Vector3.UP)
-		global_transform = global_transform.interpolate_with(target_transform, rotation_speed * delta)
+	# Movement
+	if move_dir.length() > 0.1:
+		velocity.x = lerp(velocity.x, move_dir.x * SPEED, ACCEL * delta)
+		velocity.z = lerp(velocity.z, move_dir.z * SPEED, ACCEL * delta)
 
-		# Switch to Walk animation (Ensure this matches your lowercase/uppercase graph names!)
-		if anim_state:
-			anim_state.travel("walk")
+		# Smooth rotation
+		var target_rot := atan2(-move_dir.x, -move_dir.z)
+		rotation.y = lerp_angle(rotation.y, target_rot, ROT_SPEED * delta)
+
+		if anim_player:
+			anim_player.play("Walk")
 	else:
-		velocity.x = lerp(velocity.x, 0.0, acceleration * delta)
-		velocity.z = lerp(velocity.z, 0.0, acceleration * delta)
+		velocity.x = move_toward(velocity.x, 0, DECEL * delta)
+		velocity.z = move_toward(velocity.z, 0, DECEL * delta)
 
-		# Switch to Idle animation (Ensure this matches your lowercase/uppercase graph names!)
-		if anim_state:
-			anim_state.travel("idle")
+		if anim_player:
+			anim_player.play("Idle")
+
+	# Gravity
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	else:
+		velocity.y = 0
 
 	move_and_slide()

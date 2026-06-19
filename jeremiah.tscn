@@ -1,9 +1,0 @@
-[gd_scene format=3 uid="uid://dpx0i4olo6kk"]
-
-[ext_resource type="PackedScene" uid="uid://caokwycx2nmjx" path="res://Jeremiah.fbx" id="1_e0lcq"]
-
-[node name="Jeremiah" unique_id=1356480074 instance=ExtResource("1_e0lcq")]
-
-[node name="Mesh_0" parent="Skeleton3D" parent_id_path=PackedInt32Array(940958337) index="0" unique_id=192418741]
-transform = Transform3D(100, 0, 0, 0, -1.1920928e-05, 99.999985, 0, -99.999985, -1.1920928e-05, 0, 0, 0)
-bone_idx = 0
