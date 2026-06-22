@@ -1,21 +1,21 @@
 [remap]
 
-importer="scene"
+importer="animation_library"
 importer_version=1
-type="PackedScene"
-uid="uid://b5g03vhwgc7cl"
-path="res://.godot/imported/Idle.fbx-7f94d9f769274ef12029752b29cd0f0b.scn"
+type="AnimationLibrary"
+uid="uid://cig7doxyc4r1r"
+path="res://.godot/imported/Idle.fbx-7f94d9f769274ef12029752b29cd0f0b.res"
 
 [deps]
 
 source_file="res://Animations/Idle.fbx"
-dest_files=["res://.godot/imported/Idle.fbx-7f94d9f769274ef12029752b29cd0f0b.scn"]
+dest_files=["res://.godot/imported/Idle.fbx-7f94d9f769274ef12029752b29cd0f0b.res"]
 
 [params]
 
-nodes/root_type=""
+nodes/root_type="Skeleton3D"
 nodes/root_name=""
-nodes/root_script=null
+nodes/root_script=Resource("uid://dh5sh62tw1quj", "res://jeremiah_controller.gd")
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false

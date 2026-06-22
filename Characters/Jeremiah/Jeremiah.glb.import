@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://bdr2srt3o8ana"
-path="res://.godot/imported/Jeremiah.glb-9c6b884c6f421827c9c6bef0c5d52d4e.scn"
+path="res://.godot/imported/Jeremiah.glb-fc11a8a4d978ddc9ae535840b5b1620e.scn"
 
 [deps]
 
-source_file="res://Jeremiah.glb"
-dest_files=["res://.godot/imported/Jeremiah.glb-9c6b884c6f421827c9c6bef0c5d52d4e.scn"]
+source_file="res://Characters/Jeremiah/Jeremiah.glb"
+dest_files=["res://.godot/imported/Jeremiah.glb-fc11a8a4d978ddc9ae535840b5b1620e.scn"]
 
 [params]
 
