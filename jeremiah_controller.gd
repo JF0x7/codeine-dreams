@@ -11,54 +11,51 @@ class_name JeremiahController
 # MOVEMENT SETTINGS - TWEAK THESE!
 # ============================================================================
 # Base movement speed (units per second)
-const SPEED := 5.0
+const SPEED: float = 5.0
 
 # How quickly the character accelerates when moving
-const ACCEL := 15.0
+const ACCEL: float = 15.0
 
 # How quickly the character decelerates when stopping
-const DECEL := 18.0
+const DECEL: float = 18.0
 
 # Character rotation speed (higher = snappier turns)
-const ROT_SPEED := 12.0
+const ROT_SPEED: float = 12.0
 
 # How fast the character jumps
-const JUMP_FORCE := 6.5
+const JUMP_FORCE: float = 6.5
 
 # Air control multiplier (0.0 = no control in air, 1.0 = full control)
-const AIR_CONTROL := 0.6
+const AIR_CONTROL: float = 0.6
 
 # How strongly the character snaps to the ground (prevents floating)
 # Increase this if character floats above ground
-const GROUND_SNAP := 1.5
+const GROUND_SNAP: float = 1.5
 
 # Maximum downward velocity (prevents falling too fast)
-const MAX_FALL_SPEED := -20.0
+const MAX_FALL_SPEED: float = -20.0
 
 # Small negative velocity to keep character on ground
-const GROUND_CLING := -0.01
+const GROUND_CLING: float = -0.01
 
-<<<<<<< Updated upstream
 # Character collision offset (adjusts where character stands relative to collision shape)
 # INCREASE THIS if character is sinking into ground
 # DECREASE if character is floating
-@export var collision_offset := 0.0
+@export var collision_offset: float = 0.0
 
-=======
->>>>>>> Stashed changes
 # ============================================================================
 # INTERNAL STATE
 # ============================================================================
-var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
-var is_moving := false
-var snap := Vector3.DOWN
-var was_on_floor := true
-var current_speed := 0.0
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var is_moving: bool = false
+var snap: Vector3 = Vector3.DOWN
+var was_on_floor: bool = true
+var current_speed: float = 0.0
 
 # ============================================================================
 # INITIALIZATION
 # ============================================================================
-func _ready():
+func _ready() -> void:
 	# Set physics mode for better ground detection
 	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
 	
@@ -67,20 +64,23 @@ func _ready():
 	anims.idle()
 	
 	print("JeremiahController initialized - Ready for gameplay!")
-<<<<<<< Updated upstream
-	print("Character Position: ", global_position)
-	print("Collision Shape: ", get_node("CollisionShape3D") if has_node("CollisionShape3D") else "Not found")
-=======
->>>>>>> Stashed changes
+	
+	# Apply collision offset if the node exists
+	if has_node("CollisionShape3D"):
+		var collision: CollisionShape3D = get_node("CollisionShape3D")
+		collision.position.y = collision_offset
+		print("Character ground offset set to: ", collision_offset)
+	else:
+		print("Warning: CollisionShape3D not found - collision offset not applied")
 
 # ============================================================================
 # PHYSICS UPDATE (Main game loop)
 # ============================================================================
-func _physics_process(delta):
+func _physics_process(delta: float) -> void:
 	# --------
 	# INPUT
 	# --------
-	var input_vec := Vector2(
+	var input_vec: Vector2 = Vector2(
 		Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
 		Input.get_action_strength("move_forward") - Input.get_action_strength("move_back")
 	)
@@ -92,14 +92,14 @@ func _physics_process(delta):
 	# --------
 	# MOVEMENT DIRECTION (Camera-relative)
 	# --------
-	var forward := camera_pivot.get_forward_direction()
-	var right := camera_pivot.get_right_direction()
-	var move_dir := (right * input_vec.x + forward * input_vec.y)
+	var forward: Vector3 = camera_pivot.get_forward_direction()
+	var right: Vector3 = camera_pivot.get_right_direction()
+	var move_dir: Vector3 = (right * input_vec.x + forward * input_vec.y)
 	
 	if move_dir.length() > 0:
 		move_dir = move_dir.normalized()
 	
-	var is_moving_input := move_dir.length() > 0.1
+	var is_moving_input: bool = move_dir.length() > 0.1
 	
 	# --------
 	# ATTACK (Can't move/jump while attacking)
@@ -122,18 +122,18 @@ func _physics_process(delta):
 	if not anims.is_attacking():
 		if is_moving_input:
 			# Calculate target velocity based on move direction
-			var target_velocity := move_dir * SPEED
+			var target_velocity: Vector3 = move_dir * SPEED
 			
 			# Use different acceleration on ground vs air
-			var acceleration := ACCEL if is_on_floor() else ACCEL * AIR_CONTROL
+			var acceleration: float = ACCEL if is_on_floor() else ACCEL * AIR_CONTROL
 			
 			# Smoothly accelerate toward target (makes movement feel fluid)
 			velocity.x = lerp(velocity.x, target_velocity.x, acceleration * delta)
 			velocity.z = lerp(velocity.z, target_velocity.z, acceleration * delta)
 			
 			# Smoothly rotate character to face movement direction
-			var target_rot := atan2(move_dir.x, move_dir.z)
-			var rotation_speed := ROT_SPEED * (1.5 if is_on_floor() else 0.8)
+			var target_rot: float = atan2(move_dir.x, move_dir.z)
+			var rotation_speed: float = ROT_SPEED * (1.5 if is_on_floor() else 0.8)
 			rotation.y = lerp_angle(rotation.y, target_rot, rotation_speed * delta)
 			
 			# Play appropriate animation based on movement direction
@@ -148,9 +148,9 @@ func _physics_process(delta):
 			
 		else:
 			# DECELERATION - Stop the character smoothly
-			var deceleration := DECEL if is_on_floor() else DECEL * 0.5
-			velocity.x = move_toward(velocity.x, 0, deceleration * delta)
-			velocity.z = move_toward(velocity.z, 0, deceleration * delta)
+			var deceleration: float = DECEL if is_on_floor() else DECEL * 0.5
+			velocity.x = move_toward(velocity.x, 0.0, deceleration * delta)
+			velocity.z = move_toward(velocity.z, 0.0, deceleration * delta)
 			
 			# Play idle animation when stopped
 			if is_moving and is_on_floor() and anims.current_anim != AnimationManager.ANIM_JUMP:
@@ -205,9 +205,9 @@ func _physics_process(delta):
 # ============================================================================
 # ATTACK FINISHED CALLBACK
 # ============================================================================
-func _on_attack_finished():
+func _on_attack_finished() -> void:
 	# When attack animation finishes, play walk or idle based on current input
-	var moving := (
+	var moving: bool = (
 		Input.get_action_strength("move_forward") > 0.1 or
 		Input.get_action_strength("move_back") > 0.1 or
 		Input.get_action_strength("move_left") > 0.1 or
@@ -232,7 +232,7 @@ func is_character_moving() -> bool:
 	return is_moving
 
 # Instantly stop all movement (useful for cutscenes)
-func force_stop():
+func force_stop() -> void:
 	velocity = Vector3.ZERO
 	is_moving = false
 	current_speed = 0.0
@@ -246,18 +246,15 @@ func get_current_velocity() -> float:
 # Check if character is in the air
 func is_airborne() -> bool:
 	return not is_on_floor()
-<<<<<<< Updated upstream
 
 # Adjust character position on ground
-func set_ground_offset(offset: float):
+func set_ground_offset(offset: float) -> void:
 	"""
 	Adjust how high/low character stands relative to ground.
 	Positive = higher above ground, Negative = lower/sinking
 	"""
 	collision_offset = offset
 	if has_node("CollisionShape3D"):
-		var collision = get_node("CollisionShape3D")
+		var collision: CollisionShape3D = get_node("CollisionShape3D")
 		collision.position.y = collision_offset
 		print("Character ground offset adjusted to: ", offset)
-=======
->>>>>>> Stashed changes
