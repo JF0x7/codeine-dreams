@@ -38,11 +38,14 @@ const MAX_FALL_SPEED := -20.0
 # Small negative velocity to keep character on ground
 const GROUND_CLING := -0.01
 
+<<<<<<< Updated upstream
 # Character collision offset (adjusts where character stands relative to collision shape)
 # INCREASE THIS if character is sinking into ground
 # DECREASE if character is floating
 @export var collision_offset := 0.0
 
+=======
+>>>>>>> Stashed changes
 # ============================================================================
 # INTERNAL STATE
 # ============================================================================
@@ -64,8 +67,11 @@ func _ready():
 	anims.idle()
 	
 	print("JeremiahController initialized - Ready for gameplay!")
+<<<<<<< Updated upstream
 	print("Character Position: ", global_position)
 	print("Collision Shape: ", get_node("CollisionShape3D") if has_node("CollisionShape3D") else "Not found")
+=======
+>>>>>>> Stashed changes
 
 # ============================================================================
 # PHYSICS UPDATE (Main game loop)
@@ -240,6 +246,7 @@ func get_current_velocity() -> float:
 # Check if character is in the air
 func is_airborne() -> bool:
 	return not is_on_floor()
+<<<<<<< Updated upstream
 
 # Adjust character position on ground
 func set_ground_offset(offset: float):
@@ -252,3 +259,5 @@ func set_ground_offset(offset: float):
 		var collision = get_node("CollisionShape3D")
 		collision.position.y = collision_offset
 		print("Character ground offset adjusted to: ", offset)
+=======
+>>>>>>> Stashed changes

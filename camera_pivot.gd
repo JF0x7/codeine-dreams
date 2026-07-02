@@ -23,12 +23,18 @@ class_name CameraPivot
 @export var follow_height := 1.5
 
 # Smoothing factor for camera movement (0.01 = very smooth, 0.5 = snappy)
+<<<<<<< Updated upstream
+=======
+# Lower values = smoother but more delayed
+# Higher values = snappier but jerkier
+>>>>>>> Stashed changes
 @export var follow_smoothing := 0.15
 
 # Enable/disable camera following (useful for testing)
 @export var enable_camera_following := true
 
 # ============================================================================
+<<<<<<< Updated upstream
 # MAP BOUNDARY SETTINGS - TWEAK THESE!
 # ============================================================================
 # Minimum Y position (prevent camera from going under the map)
@@ -42,6 +48,8 @@ class_name CameraPivot
 @export var enable_boundary_checking := true
 
 # ============================================================================
+=======
+>>>>>>> Stashed changes
 # INTERNAL STATE
 # ============================================================================
 var yaw := 0.0      # Horizontal rotation
@@ -80,6 +88,7 @@ func _process(delta):
 	if enable_camera_following and get_parent():
 		var player = get_parent()
 		
+<<<<<<< Updated upstream
 		# Calculate camera position behind player
 		# Get camera direction (backwards from where player is looking)
 		var camera_direction = -global_transform.basis.z
@@ -99,6 +108,17 @@ func _process(delta):
 
 # ============================================================================
 # DIRECTION HELPERS - Used by player movement
+=======
+		# Target position is behind player at follow_height
+		target_position = player.global_position + Vector3(0, follow_height, 0)
+		
+		# Smoothly interpolate camera position toward target
+		# This creates the "lag" effect that feels smooth
+		global_position = global_position.lerp(target_position, follow_smoothing)
+
+# ============================================================================
+# DIRECTION HELPERS - Used by player movement to move relative to camera
+>>>>>>> Stashed changes
 # ============================================================================
 
 # Get the forward direction the camera is facing (ignoring vertical tilt)
@@ -140,6 +160,7 @@ func reset_camera():
 	yaw = 0.0
 	pitch = 0.0
 	print("Camera reset to default orientation")
+<<<<<<< Updated upstream
 
 # Set map boundary height (call this if you change map size)
 func set_min_camera_height(height: float):
@@ -151,3 +172,5 @@ func set_max_camera_height(height: float):
 	"""Set the maximum camera height"""
 	max_camera_height = height
 	print("Max camera height set to: ", height)
+=======
+>>>>>>> Stashed changes
