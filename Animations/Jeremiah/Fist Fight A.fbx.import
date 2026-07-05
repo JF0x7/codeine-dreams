@@ -1,15 +1,15 @@
 [remap]
 
-importer="scene"
+importer="animation_library"
 importer_version=1
-type="PackedScene"
-uid="uid://cmjsdt0qsej5n"
-path="res://.godot/imported/Fist Fight A.fbx-2ca5c4faddd874d52ebf65ef2ce18498.scn"
+type="AnimationLibrary"
+uid="uid://dwpxd1ufab7t3"
+path="res://.godot/imported/Fist Fight A.fbx-2ca5c4faddd874d52ebf65ef2ce18498.res"
 
 [deps]
 
 source_file="res://Animations/Jeremiah/Fist Fight A.fbx"
-dest_files=["res://.godot/imported/Fist Fight A.fbx-2ca5c4faddd874d52ebf65ef2ce18498.scn"]
+dest_files=["res://.godot/imported/Fist Fight A.fbx-2ca5c4faddd874d52ebf65ef2ce18498.res"]
 
 [params]
 

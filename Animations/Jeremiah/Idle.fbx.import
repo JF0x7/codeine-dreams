@@ -3,7 +3,7 @@
 importer="animation_library"
 importer_version=1
 type="AnimationLibrary"
-uid="uid://cig7doxyc4r1r"
+uid="uid://cb281p526bv6u"
 path="res://.godot/imported/Idle.fbx-3ed1f4098907a133f8f06ebc52e53ef0.res"
 
 [deps]
@@ -13,9 +13,9 @@ dest_files=["res://.godot/imported/Idle.fbx-3ed1f4098907a133f8f06ebc52e53ef0.res
 
 [params]
 
-nodes/root_type="Skeleton3D"
+nodes/root_type=""
 nodes/root_name=""
-nodes/root_script=Resource("uid://dh5sh62tw1quj", "res://jeremiah_controller.gd")
+nodes/root_script=null
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
