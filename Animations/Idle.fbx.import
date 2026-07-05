@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/Idle.fbx-7f94d9f769274ef12029752b29cd0f0b.res
 
 nodes/root_type="Skeleton3D"
 nodes/root_name=""
-nodes/root_script=Resource("uid://dh5sh62tw1quj", "res://jeremiah_controller.gd")
+nodes/root_script=Resource("uid://csnh28h3q7tj0", "res://jeremiah_controller.gd")
 nodes/apply_root_scale=true
 nodes/root_scale=1.0
 nodes/import_as_skeleton_bones=false
