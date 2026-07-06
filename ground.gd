@@ -30,8 +30,8 @@ extends StaticBody3D
 @export var grid_divisions := 20
 # Number of grid lines
 
-@export var grid_color := Color(0.0, 0.0, 0.0, 0.4)
-# Blueprint blue with transparency
+@export var grid_color := Color(1.0, 1.0, 1.0, 0.4)
+# Blueprint white with transparency
 
 @export var grid_y_offset := 0.02
 # Lift grid slightly above boundary to avoid z-fighting

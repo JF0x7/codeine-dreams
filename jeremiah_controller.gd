@@ -1,188 +1,297 @@
 extends CharacterBody3D
-
 class_name JeremiahController
 
-# ---- Nodes ----
+# ============================================================
+# EXPORTS
+# ============================================================
+
+@export var SPEED := 5.0
+@export var STRAFE_SPEED := 5.0
+@export var ROTATION_SPEED := 8.0
+@export var JUMP_FORCE := 6.0
+@export var BLEND_TIME := 0.15
+
+@export var MOUSE_SENSITIVITY := 0.2
+@export var INVERT_Y := false
+@export var CAMERA_SMOOTH := 0.15
+@export var CAMERA_DISTANCE := 4.0
+@export var MIN_CAMERA_ANGLE := -80.0
+@export var MAX_CAMERA_ANGLE := 80.0
+
+@export var MOONWALK_ENABLED := true
+@export var MOONWALK_ANGLE := 0
+@export var MOONWALK_SPEED_MULTIPLIER := 1.0
+
+# ============================================================
+# NODES
+# ============================================================
+
 @onready var anim: AnimationPlayer = find_child("AnimationPlayer", true, false)
 @onready var cam_pivot: Node3D = $CameraPivot
+@onready var camera: Camera3D = find_child("Camera3D", true, false)
+@onready var spring_arm: SpringArm3D = find_child("SpringArm3D", true, false)
 
-# ---- Animation Names ----
-const Anim = {
-	IDLE = "Idle",
-	WALK = "Walking",
-	JUMP = "Jump",
-	ATTACK = "Fist Fight A"
-}
+# ============================================================
+# STATE
+# ============================================================
 
-# ---- Movement ----
-const SPEED := 5.0
-const JUMP_FORCE := 6.0
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
-
-# ---- State ----
+var cam_rot := Vector2.ZERO
+var cam_target := Vector2.ZERO
+var mouse_captured := true
+var anim_cache := {}
+var current := ""
 var attacking := false
-var is_moving := false
+var gravity : float= ProjectSettings.get_setting("physics/3d/default_gravity")
 
-# ---- Rotation ----
-var target_rotation := 0.0
-var rot_speed := 8.0
+const PREFIXES := ["", "Animations/Jeremiah/"]
+const SUFFIXES := ["", "/mixamo_com"]
+const Anim = {IDLE="Idle", WALK="Walk", BACK="Back", JUMP="Jump", ATTACK="Fist Fight A", LEFT="Walk", RIGHT="Walk"}
 
-# ---- Self‑Learning AI ----
-var fluidity_score := 0.6              # How smooth movement should feel
-var input_memory: Array = []           # Stores recent inputs
-var learning_rate := 0.03              # How fast AI adapts
-var ai_input := Vector2.ZERO           # AI‑stabilized input
-
+# ============================================================
+# READY
+# ============================================================
 
 func _ready():
 	if not anim:
 		push_error("AnimationPlayer NOT FOUND")
 		return
 	
+	if not camera:
+		camera = get_viewport().get_camera_3d()
+	
+	await get_tree().process_frame
+	
+	for n in anim.get_animation_list():
+		anim_cache[n] = true
+	
 	anim.animation_finished.connect(_on_animation_finished)
 	floor_snap_length = 0.5
-	target_rotation = rotation.y
-	anim.play_safe(Anim.IDLE)
+	_play_safe(Anim.IDLE)
+	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	if spring_arm:
+		spring_arm.spring_length = CAMERA_DISTANCE
 
+# ============================================================
+# INPUT
+# ============================================================
+
+func _input(e):
+	if e is InputEventMouseMotion and mouse_captured:
+		cam_target.x -= e.relative.x * MOUSE_SENSITIVITY * 0.01
+		cam_target.y += (e.relative.y * MOUSE_SENSITIVITY * 0.01) * (1 if INVERT_Y else -1)
+		cam_target.y = clamp(cam_target.y, deg_to_rad(MIN_CAMERA_ANGLE), deg_to_rad(MAX_CAMERA_ANGLE))
+	
+	if e is InputEventKey and e.pressed and e.keycode == KEY_ESCAPE:
+		mouse_captured = !mouse_captured
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED if mouse_captured else Input.MOUSE_MODE_VISIBLE)
+	
+	if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+		mouse_captured = true
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+
+# ============================================================
+# PHYSICS
+# ============================================================
 
 func _physics_process(delta):
-	if not anim:
-		return
+	var grounded := is_on_floor()
+	var f := Input.get_action_strength("move_forward")
+	var b := Input.get_action_strength("move_back")
+	var l := Input.get_action_strength("move_left")
+	var r := Input.get_action_strength("move_right")
+	var moving := f > 0 or b > 0 or l > 0 or r > 0
 	
-	# ---- Raw Input ----
-	var raw_input := Vector2(
-		Input.get_axis("move_left", "move_right"),
-		Input.get_axis("move_forward", "move_back")
-	)
-	if raw_input.length() > 1.0:
-		raw_input = raw_input.normalized()
-	
-	is_moving = raw_input.length() > 0.1
-	var is_on_ground := is_on_floor()
-	
-	# ---- Self‑Learning AI: stabilize + learn from input ----
-	_update_ai(raw_input)
-	var input_vec := ai_input
-	
-	# ---- Attack ----
+	# Attack
 	if Input.is_action_just_pressed("attack") and not attacking:
 		attacking = true
-		anim.play_safe(Anim.ATTACK, 0.05)
-		return
+		_play_safe(Anim.ATTACK, 0.05)
 	
-	# ---- Jump ----
-	if Input.is_action_just_pressed("jump") and is_on_ground and not attacking:
+	# Jump
+	if Input.is_action_just_pressed("jump") and grounded:
 		velocity.y = JUMP_FORCE
-		anim.play_safe(Anim.JUMP, 0.05)
+		_play_safe(Anim.JUMP, 0.05)
 	
-	# ---- Movement ----
-	if not attacking:
-		var forward := -cam_pivot.global_transform.basis.z
-		var right := cam_pivot.global_transform.basis.x
-		var move_dir: Vector3 = (right * input_vec.x) + (forward * input_vec.y)
-		
-		if is_moving:
-			move_dir = move_dir.normalized()
-			
-			# Smooth rotation based on fluidity_score
-			target_rotation = atan2(move_dir.x, move_dir.z)
-			var angle_diff := _angle_difference(rotation.y, target_rotation)
-			var rot_mult := 0.5 + fluidity_score * 0.5
-			rotation.y += sign(angle_diff) * min(abs(angle_diff), rot_speed * rot_mult * delta)
-			
-			# Movement speed also influenced by fluidity_score
-			var speed_mult := 0.6 + fluidity_score * 0.4
-			velocity.x = move_dir.x * SPEED * speed_mult
-			velocity.z = move_dir.z * SPEED * speed_mult
-		else:
-			velocity.x = move_toward(velocity.x, 0.0, SPEED * delta)
-			velocity.z = move_toward(velocity.z, 0.0, SPEED * delta)
+	# Camera
+	_update_camera(delta)
+	
+	# Directions
+	var cf := Vector3.FORWARD
+	var cr := Vector3.RIGHT
+	if camera:
+		cf = -camera.global_transform.basis.z
+		cr = camera.global_transform.basis.x
+		cf.y = 0
+		cr.y = 0
+		cf = cf.normalized()
+		cr = cr.normalized()
+	
+	# Movement - Completely remove backward + left/right
+	var dir := Vector3.ZERO
+	
+	# Forward only
+	if f > 0:
+		dir += cf
+	
+	# Backward only (no left/right combo)
+	if b > 0 and not (l > 0 or r > 0):
+		if MOONWALK_ENABLED:
+			dir += -cf * MOONWALK_SPEED_MULTIPLIER
+	
+	# Left only (no backward combo)
+	if l > 0 and not b > 0:
+		dir += -cr
+	
+	# Right only (no backward combo)
+	if r > 0 and not b > 0:
+		dir += cr
+	
+	if dir != Vector3.ZERO:
+		dir = dir.normalized()
+	
+	# Rotation
+	if MOONWALK_ENABLED and b > 0 and not (f > 0 or l > 0 or r > 0):
+		rotation.y = lerp_angle(rotation.y, atan2(cf.x, cf.z), delta * ROTATION_SPEED)
+	elif moving:
+		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), delta * ROTATION_SPEED)
+	
+	# Velocity
+	if moving:
+		velocity.x = dir.x * (STRAFE_SPEED if (l > 0 or r > 0) else SPEED)
+		velocity.z = dir.z * SPEED
+		if MOONWALK_ENABLED and b > 0 and not (f > 0 or l > 0 or r > 0):
+			velocity.x *= MOONWALK_SPEED_MULTIPLIER
+			velocity.z *= MOONWALK_SPEED_MULTIPLIER
 	else:
-		velocity.x = move_toward(velocity.x, 0.0, SPEED * delta * 2.0)
-		velocity.z = move_toward(velocity.z, 0.0, SPEED * delta * 2.0)
+		velocity.x = move_toward(velocity.x, 0.0, SPEED * delta)
+		velocity.z = move_toward(velocity.z, 0.0, SPEED * delta)
 	
-	# ---- Gravity ----
-	if not is_on_ground:
+	# Gravity
+	if grounded:
+		velocity.y = max(velocity.y, 0.0)
+	else:
 		velocity.y -= gravity * delta
-	elif velocity.y < 0.0:
-		velocity.y = 0.0
 	
 	move_and_slide()
 	
-	# ---- Animations ----
-	if not attacking:
-		var target_anim := _select_animation(is_moving, is_on_ground)
-		if anim.current_animation_name != target_anim:
-			anim.play_safe(target_anim, 0.15)
-
-
-# ---------------------------------------------------------
-# Self‑Learning AI Module
-# ---------------------------------------------------------
-func _update_ai(raw_input: Vector2):
-	# If not moving, slowly reset toward neutral
-	if raw_input.length() < 0.1:
-		ai_input = raw_input
-		fluidity_score = lerp(fluidity_score, 0.6, 0.01)
+	# Animation - FIXED: Restart animations after attack
+	if attacking:
 		return
 	
-	# Store recent inputs
-	input_memory.append(raw_input)
-	if input_memory.size() > 30:
-		input_memory.pop_front()
-	
-	# Compute average input direction
-	var avg := Vector2.ZERO
-	for v in input_memory:
-		avg += v
-	avg /= float(input_memory.size())
-	
-	# AI‑stabilized input: blend raw toward average
-	ai_input = raw_input.lerp(avg, 0.2)
-	if ai_input.length() > 1.0:
-		ai_input = ai_input.normalized()
-	
-	# Measure consistency: how close raw input is to average
-	var consistency := 1.0 - (raw_input.angle_to(avg) * 0.8)
-	consistency = clamp(consistency, 0.0, 1.0)
-	
-	# Update fluidity_score based on consistency
-	fluidity_score = lerp(fluidity_score, consistency, learning_rate)
-	fluidity_score = clamp(fluidity_score, 0.3, 0.95)
-
-
-# ---------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------
-func _select_animation(moving: bool, on_ground: bool) -> String:
-	if not on_ground:
-		return Anim.JUMP
+	if not grounded:
+		_play_safe(Anim.JUMP)
 	elif moving:
-		return Anim.WALK
+		# Check movement direction and play appropriate animation
+		if l > 0:
+			_play_safe(Anim.LEFT)
+		elif r > 0:
+			_play_safe(Anim.RIGHT)
+		elif b > 0:
+			_play_safe(Anim.BACK)
+		else:
+			_play_safe(Anim.WALK)
 	else:
-		return Anim.IDLE
+		_play_safe(Anim.IDLE)
 
+# ============================================================
+# CAMERA
+# ============================================================
 
-func _angle_difference(from: float, to: float) -> float:
-	var diff := fmod(to - from, TAU)
-	if diff > PI:
-		diff -= TAU
-	elif diff < -PI:
-		diff += TAU
-	return diff
+func _update_camera(delta):
+	cam_rot = cam_rot.lerp(cam_target, 1.0 - exp(-CAMERA_SMOOTH * 60.0 * delta))
+	
+	if cam_pivot:
+		cam_pivot.rotation.x = cam_rot.y
+		cam_pivot.rotation.y = cam_rot.x
+	
+	if spring_arm:
+		spring_arm.spring_length = CAMERA_DISTANCE
+		spring_arm.rotation.x = -cam_rot.y
+		spring_arm.rotation.y = cam_rot.x
 
+# ============================================================
+# ANIMATION - FORCED RESTART AFTER ATTACK
+# ============================================================
 
-func _on_animation_finished(anim_name: String):
-	var attack_name = anim._find_animation(Anim.ATTACK)
-	if anim_name == attack_name:
+func _on_animation_finished(n: String):
+	if n == Anim.ATTACK or n == "Fist Fight A" or n == "Fist Fight A/mixamo_com":
 		attacking = false
-		anim.play_safe(Anim.IDLE, 0.2)
+		
+		# FORCE STOP and restart the animation system
+		anim.stop()
+		anim.seek(0.0, true)
+		
+		# Small delay to let the AnimationPlayer reset
+		await get_tree().create_timer(0.02).timeout
+		
+		# Check input and play appropriate animation
+		var f := Input.get_action_strength("move_forward")
+		var b := Input.get_action_strength("move_back")
+		var l := Input.get_action_strength("move_left")
+		var r := Input.get_action_strength("move_right")
+		var moving := f > 0 or b > 0 or l > 0 or r > 0
+		
+		# Immediately play the right animation based on input
+		if moving:
+			if l > 0:
+				_play_safe_forced(Anim.LEFT, 0.1)
+			elif r > 0:
+				_play_safe_forced(Anim.RIGHT, 0.1)
+			elif b > 0:
+				_play_safe_forced(Anim.BACK, 0.1)
+			else:
+				_play_safe_forced(Anim.WALK, 0.1)
+		else:
+			_play_safe_forced(Anim.IDLE, 0.1)
 
+# ============================================================
+# FORCED PLAY - Resets animation state completely
+# ============================================================
 
-# ---- Debug / Stats ----
-func get_stats() -> Dictionary:
-	return {
-		"fluidity": fluidity_score,
-		"memory_size": input_memory.size(),
-		"ai_input": ai_input
-	}
+func _play_safe_forced(name: String, blend: float = 0.1) -> void:
+	var resolved := _resolve(name)
+	if resolved == "":
+		return
+	
+	# Force stop and clear state
+	anim.stop()
+	anim.seek(0.0, true)
+	
+	# Reset current tracking
+	current = resolved
+	
+	# Play with forced blend
+	anim.play(resolved, blend)
+
+# ============================================================
+# SAFE PLAY - Normal animation playback
+# ============================================================
+
+func _play_safe(name: String, blend: float = -1.0) -> void:
+	# Don't allow animation changes during attack
+	if attacking and name != Anim.ATTACK:
+		return
+	
+	var resolved := _resolve(name)
+	if resolved == "" or (current == resolved and anim.is_playing()):
+		return
+	current = resolved
+	anim.play(resolved, blend if blend >= 0 else BLEND_TIME)
+
+func _resolve(name: String) -> String:
+	if anim_cache.has(name):
+		return name
+	
+	for p in PREFIXES:
+		for s in SUFFIXES:
+			var full :String= p + name + s
+			if anim_cache.has(full):
+				return full
+	
+	for c in anim_cache.keys():
+		var lc :String= c.to_lower()
+		var ln := name.to_lower()
+		if lc == ln or ln in lc:
+			return c
+	
+	return ""

@@ -1,83 +1,115 @@
 extends AnimationPlayer
+class_name JeremiahAnimator
 
-var anim_cache: Dictionary = {}
-var current_animation_name: String = ""
+# ============================================================
+# EXPORTS
+# ============================================================
+
 @export var blend_time: float = 0.15
+@export var animation_speed: float = 1.0
+@export var blend_times: Dictionary = {
+	"Idle_to_Walk": 0.15, "Idle_to_Back": 0.15, "Idle_to_Jump": 0.1, "Idle_to_Fist Fight A": 0.05,
+	"Walk_to_Idle": 0.15, "Walk_to_Back": 0.2, "Walk_to_Jump": 0.1, "Walk_to_Fist Fight A": 0.05,
+	"Back_to_Idle": 0.15, "Back_to_Walk": 0.2, "Back_to_Jump": 0.1, "Back_to_Fist Fight A": 0.05,
+	"Jump_to_Idle": 0.1, "Jump_to_Walk": 0.1, "Jump_to_Back": 0.1, "Jump_to_Fist Fight A": 0.05,
+	"Fist Fight A_to_Idle": 0.2, "Fist Fight A_to_Walk": 0.15, "Fist Fight A_to_Back": 0.15, "Fist Fight A_to_Jump": 0.1,
+}
 
-func _ready() -> void:
+# ============================================================
+# STATE
+# ============================================================
+
+var anim_cache := {}
+var current := ""
+var previous := ""
+var attack_finished_callback: Callable
+
+const PREFIXES := ["", "Animations/Jeremiah/"]
+const SUFFIXES := ["", "/mixamo_com"]
+const Anim = {IDLE="Idle", WALK="Walk", BACK="Back", JUMP="Jump", ATTACK="Fist Fight A"}
+
+# ============================================================
+# READY
+# ============================================================
+
+func _ready():
 	await get_tree().process_frame
-	
-	var names: PackedStringArray = get_animation_list()
-	
-	if names.is_empty():
-		print("No animations found! Check your AnimationPlayer node.")
-		return
-	
-	for name in names:
-		anim_cache[name] = true
-	
-	print("=== AnimationPlayer Ready ===")
-	print("Animations found (%d):" % names.size())
-	for name in anim_cache.keys():
-		print(" • ", name)
+	for name in get_animation_list(): anim_cache[name] = true
+	print("✅ Loaded:", anim_cache.keys())
 
-func play_safe(anim_name: String, custom_blend: float = -1.0) -> void:
-	var actual := _find_animation(anim_name)
-	
-	if actual == "":
-		print("⚠ Animation not found: ", anim_name)
-		return
-	
-	if current_animation_name == actual and is_playing():
-		return
-	
-	var blend: float = custom_blend if custom_blend >= 0.0 else blend_time
-	
-	play(actual, blend)
-	current_animation_name = actual
+# ============================================================
+# PLAY - Smart Blending
+# ============================================================
 
-func play_instant(anim_name: String) -> void:
-	var actual := _find_animation(anim_name)
-	if actual == "":
-		print("⚠ Animation not found: ", anim_name)
-		return
-	play(actual)
-	current_animation_name = actual
+func play_safe(name: String, blend: float = -1.0) -> void:
+	var resolved := _resolve(name)
+	if resolved == "" or (current == resolved and is_playing()): return
+	
+	previous = current
+	current = resolved
+	
+	var actual_blend := blend if blend >= 0.0 else _get_blend(previous, resolved)
+	speed_scale = animation_speed
+	play(resolved, actual_blend)
 
-func crossfade_to(anim_name: String, duration: float = 0.2) -> void:
-	var actual := _find_animation(anim_name)
-	if actual == "":
-		print("⚠ Animation not found: ", anim_name)
-		return
-	play(actual, duration)
-	current_animation_name = actual
+# ============================================================
+# RESTART AFTER ATTACK - Call this from controller
+# ============================================================
 
-func _find_animation(anim_name: String) -> String:
-	if anim_cache.has(anim_name):
-		return anim_name
-	
-	var mixamo := anim_name + "/mixamo_com"
-	if anim_cache.has(mixamo):
-		return mixamo
-	
-	var folder := "Animations/Jeremiah/" + anim_name
-	if anim_cache.has(folder):
-		return folder
-	
-	var full := "Animations/Jeremiah/" + anim_name + "/mixamo_com"
-	if anim_cache.has(full):
-		return full
-	
+func restart_after_attack() -> void:
+	# Force restart current animation to reset blend
+	if current == _resolve(Anim.ATTACK):
+		stop()
+		play(current, 0.05)
+
+# ============================================================
+# GET BLEND TIME
+# ============================================================
+
+func _get_blend(from: String, to: String) -> float:
+	var key := "%s_to_%s" % [from, to]
+	return blend_times.get(key, blend_times.get("%s_to_%s" % [to, from], blend_time))
+
+# ============================================================
+# RESOLVE ANIMATION
+# ============================================================
+
+func _resolve(name: String) -> String:
+	if anim_cache.has(name): return name
+	for p in PREFIXES:
+		for s in SUFFIXES:
+			var full :String= p + name + s
+			if anim_cache.has(full): return full
+	for c in anim_cache.keys():
+		var lc :String= c.to_lower()
+		var ln := name.to_lower()
+		if lc == ln or ln in lc: return c
 	return ""
 
-func has_animation_safe(anim_name: String) -> bool:
-	return _find_animation(anim_name) != ""
+# ============================================================
+# UTILITY
+# ============================================================
 
-func get_animation_names() -> Array:
-	return anim_cache.keys()
+func get_current() -> String: return current
+func get_previous() -> String: return previous
+func has_anim(name: String) -> bool: return _resolve(name) != ""
+func set_speed(speed: float) -> void: animation_speed = speed; speed_scale = speed
+func blend_to_idle(blend: float = -1.0) -> void: play_safe(Anim.IDLE, blend)
 
-func get_current_animation_name() -> String:
-	return current_animation_name
+# ============================================================
+# QUEUE ANIMATION
+# ============================================================
 
-func is_animation_playing(anim_name: String) -> bool:
-	return current_animation_name == _find_animation(anim_name) and is_playing()
+func queue_animation(name: String, blend: float = -1.0) -> void:
+	animation_finished.connect(func(): play_safe(name, blend), CONNECT_ONE_SHOT)
+
+# ============================================================
+# DEBUG
+# ============================================================
+
+func debug() -> void:
+	print("=== BLEND DEBUG ===")
+	print("Current:", current, "| Previous:", previous)
+	print("Blend time:", blend_time)
+	print("Speed:", speed_scale)
+	print("===================")
