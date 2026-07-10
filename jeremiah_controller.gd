@@ -182,8 +182,10 @@ func _physics_process(delta):
 		if l > 0 or r > 0:
 			base_speed = STRAFE_SPEED
 
-		velocity.x = lerp(velocity.x, dir.x * base_speed, delta * 12.0)
-		velocity.z = lerp(velocity.z, dir.z * base_speed, delta * 12.0)
+		var accel := 20.0777
+		velocity.x = move_toward(velocity.x, dir.x * base_speed, accel * delta)
+		velocity.z = move_toward(velocity.z, dir.z * base_speed, accel * delta)
+
 
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, SPEED * delta)
