@@ -3,101 +3,81 @@ extends Node3D
 @onready var camera: Camera3D = $Camera3D
 
 # --- Camera Settings ---
-@export var distance := 11          # Default camera distance behind player
-@export var min_distance :=7.7       # Minimum allowed zoom distance
-@export var height := 1.7           # Orbit pivot height (raised for perfect sky view)
+@export var distance: float = 11.0
+@export var min_distance: float = 7.7
+@export var height: float = 1.7
 
-# --- Mouse Look ---
-@export var mouse_sensitivity := 0.005
-@export var min_pitch := deg_to_rad(-89.7)   # Allow full downward look
-@export var max_pitch := deg_to_rad(89.7)    # Allow full upward look
+# --- Sensitivity ---
+@export var mouse_sensitivity: float = 0.005
+@export var stick_sensitivity: float = 2.5
 
-var yaw := 0.0                        # Horizontal rotation angle
-var pitch := deg_to_rad(15.0)         # Vertical rotation angle
+@export var min_pitch: float = deg_to_rad(-89.7)
+@export var max_pitch: float = deg_to_rad(89.7)
 
-# --- Scroll Zoom ---
-@export var zoom_step := 1.0
-@export var min_zoom := 1.0
-@export var max_zoom := 15.0
-var zoom_distance := 10.7             # Current zoom distance
+var yaw: float = 0.0
+var pitch: float = deg_to_rad(15.0)
 
-func _ready():
-	# Set near clipping plane so camera doesn't clip through close objects
+# --- Zoom ---
+@export var zoom_step: float = 1.0
+@export var min_zoom: float = 1.0
+@export var max_zoom: float = 15.0
+var zoom_distance: float = 10.7
+
+
+func _ready() -> void:
 	camera.near = 0.7
-
-	# Initialize zoom distance
 	zoom_distance = distance
-
-	# Capture mouse for camera control
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 
-func _input(event):
-	# ----------------------------------------------------------
-	# MOUSE LOOK
-	# ----------------------------------------------------------
+func _input(event: InputEvent) -> void:
+	# --- Mouse Look ---
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		# Horizontal rotation (left/right)
 		yaw -= event.relative.x * mouse_sensitivity
-
-		# Vertical rotation (up/down)
 		pitch -= event.relative.y * mouse_sensitivity
-
-		# Clamp pitch so camera can look fully up and down
 		pitch = clamp(pitch, min_pitch, max_pitch)
 
-	# ESC unlocks mouse
+	# --- Mouse Capture Toggle ---
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
-	# Left click recaptures mouse
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
-	# ----------------------------------------------------------
-	# SCROLL ZOOM
-	# ----------------------------------------------------------
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			# Zoom in
+	# --- Scroll Zoom ---
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			zoom_distance = clamp(zoom_distance - zoom_step, min_zoom, max_zoom)
-
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			# Zoom out
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			zoom_distance = clamp(zoom_distance + zoom_step, min_zoom, max_zoom)
 
 
-func _process(_delta):
-	# ----------------------------------------------------------
-	# ORBIT PIVOT POINT
-	# ----------------------------------------------------------
-	# Raise pivot above player so camera never dips underground
+func _process(delta: float) -> void:
+	# --- Controller Look ---
+	var look_x := Input.get_action_strength("look_right") - Input.get_action_strength("look_left")
+	var look_y := Input.get_action_strength("look_down") - Input.get_action_strength("look_up")
+
+	yaw -= look_x * stick_sensitivity * delta
+	pitch -= look_y * stick_sensitivity * delta
+	pitch = clamp(pitch, min_pitch, max_pitch)
+
+	# --- Orbit Pivot ---
 	var target := global_position + Vector3(0, height, 0)
 
-	# ----------------------------------------------------------
-	# SPHERICAL ORBIT OFFSET (perfect sky view)
-	# ----------------------------------------------------------
-	# This creates a true orbit around the player using yaw/pitch
+	# --- Orbit Offset ---
 	var offset := Vector3(
-		sin(yaw) * cos(pitch) * zoom_distance,  # X movement
-		sin(pitch) * zoom_distance,             # Y movement (up/down)
-		cos(yaw) * cos(pitch) * zoom_distance   # Z movement
+		sin(yaw) * cos(pitch) * zoom_distance,
+		sin(pitch) * zoom_distance,
+		cos(yaw) * cos(pitch) * zoom_distance
 	)
 
-	# ----------------------------------------------------------
-	# RAYCAST TO AVOID WALL CLIPPING
-	# ----------------------------------------------------------
+	# --- Collision Raycast ---
 	var ray := PhysicsRayQueryParameters3D.create(target, target + offset)
 	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
 
-	# If ray hits something AND it's not the player, move camera to hit point
 	if hit and hit.collider != self:
 		camera.global_position = hit.position
 	else:
-		# Otherwise place camera at orbit offset
 		camera.global_position = target + offset
 
-	# ----------------------------------------------------------
-	# CAMERA LOOKS AT PLAYER
-	# ----------------------------------------------------------
 	camera.look_at(target, Vector3.UP)
