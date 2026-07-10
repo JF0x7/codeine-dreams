@@ -24,7 +24,7 @@ class_name JeremiahController
 # MOONWALK SETTINGS
 # ============================================================
 @export var MOONWALK_ENABLED: bool = true
-@export var MOONWALK_ANGLE: float = 0
+@export var MOONWALK_ANGLE: float = 0.0
 @export var MOONWALK_SPEED_MULTIPLIER: float = 1.0
 
 # ============================================================
@@ -65,33 +65,24 @@ const Anim = {
 # READY
 # ============================================================
 func _ready():
-	# Ensure AnimationPlayer exists
 	if not anim:
 		push_error("AnimationPlayer not found.")
 		return
 
-	# Fallback camera if node path fails
 	if not camera:
 		camera = get_viewport().get_camera_3d()
 
-	# Cache animation names
 	await get_tree().process_frame
 	for n in anim.get_animation_list():
 		anim_cache[n] = true
 
-	# Connect animation finished
 	anim.animation_finished.connect(_on_animation_finished)
 
-	# Floor snapping for stability
 	floor_snap_length = 0.5
-
-	# Start idle animation
 	_play_safe(Anim.IDLE)
 
-	# Capture mouse
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
-	# Spring arm distance
 	if spring_arm:
 		spring_arm.spring_length = CAMERA_DISTANCE
 
@@ -100,7 +91,6 @@ func _ready():
 # ============================================================
 func _input(e):
 	if e is InputEventMouseMotion and mouse_captured:
-		# Smooth camera rotation input
 		cam_target.x -= e.relative.x * MOUSE_SENSITIVITY * 0.01
 		cam_target.y += (e.relative.y * MOUSE_SENSITIVITY * 0.01) * (1 if INVERT_Y else -1)
 		cam_target.y = clamp(cam_target.y, deg_to_rad(MIN_CAMERA_ANGLE), deg_to_rad(MAX_CAMERA_ANGLE))
@@ -159,6 +149,7 @@ func _physics_process(delta):
 
 	if b > 0:
 		if MOONWALK_ENABLED:
+			# Move backward relative to camera, but we’ll face forward later
 			dir += -cf * MOONWALK_SPEED_MULTIPLIER
 		else:
 			dir += -cf
@@ -174,7 +165,13 @@ func _physics_process(delta):
 
 	# Rotation
 	if dir != Vector3.ZERO:
-		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), delta * ROTATION_SPEED)
+		if b > 0 and MOONWALK_ENABLED:
+			# Face toward camera while moving backward
+			var face_cam_angle := atan2(cf.x, cf.z) + MOONWALK_ANGLE
+			rotation.y = lerp_angle(rotation.y, face_cam_angle, delta * ROTATION_SPEED)
+		else:
+			# Normal facing: face movement direction
+			rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), delta * ROTATION_SPEED)
 
 	# Velocity
 	if moving:
@@ -185,8 +182,6 @@ func _physics_process(delta):
 		var accel := 20.0777
 		velocity.x = move_toward(velocity.x, dir.x * base_speed, accel * delta)
 		velocity.z = move_toward(velocity.z, dir.z * base_speed, accel * delta)
-
-
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, SPEED * delta)
 		velocity.z = move_toward(velocity.z, 0.0, SPEED * delta)
@@ -206,7 +201,7 @@ func _physics_process(delta):
 	if not grounded:
 		_play_safe(Anim.JUMP)
 	elif moving:
-		_play_safe(Anim.WALK)  # FIXED LIMB — ONE WALK ANIMATION ONLY
+		_play_safe(Anim.WALK)
 	else:
 		_play_safe(Anim.IDLE)
 
@@ -229,8 +224,8 @@ func _update_camera(delta):
 # ANIMATION FINISHED
 # ============================================================
 func _on_animation_finished(n: String):
-	if "fist" in n.to_lower():attacking = false
-
+	if "fist" in n.to_lower():
+		attacking = false
 
 # ============================================================
 # SAFE PLAY (BLENDED)
@@ -255,7 +250,7 @@ func _resolve(name: String) -> String:
 
 	var ln := name.to_lower()
 	for c in anim_cache.keys():
-		var lc :String= c.to_lower()
+		var lc: String = c.to_lower()
 		if lc == ln or ln in lc:
 			return c
 
