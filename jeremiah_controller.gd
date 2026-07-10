@@ -2,7 +2,9 @@ extends CharacterBody3D
 class_name JeremiahController
 
 # ============================================================
-# EXPORTS
+# EXPORT VARIABLES
+# These are adjustable settings visible in the Godot Inspector.
+# They control movement speed, camera behavior, animation blending, etc.
 # ============================================================
 
 @export var SPEED := 5.0
@@ -23,7 +25,8 @@ class_name JeremiahController
 @export var MOONWALK_SPEED_MULTIPLIER := 1.0
 
 # ============================================================
-# NODES
+# NODE REFERENCES
+# These reference parts of the character model.
 # ============================================================
 
 @onready var anim: AnimationPlayer = find_child("AnimationPlayer", true, false)
@@ -32,7 +35,9 @@ class_name JeremiahController
 @onready var spring_arm: SpringArm3D = find_child("SpringArm3D", true, false)
 
 # ============================================================
-# STATE
+# INTERNAL STATE VARIABLES
+# These store runtime information such as camera rotation,
+# animation state, and movement flags.
 # ============================================================
 
 var cam_rot := Vector2.ZERO
@@ -41,19 +46,27 @@ var mouse_captured := true
 var anim_cache := {}
 var current := ""
 var attacking := false
-var gravity : float= ProjectSettings.get_setting("physics/3d/default_gravity")
+var gravity : float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
-const PREFIXES := ["", "Animations/Jeremiah/"]
-const SUFFIXES := ["", "/mixamo_com"]
-const Anim = {IDLE="Idle", WALK="Walk", BACK="Back", JUMP="Jump", ATTACK="Fist Fight A", LEFT="Walk", RIGHT="Walk"}
+# Animation name shortcuts
+const Anim = {
+	IDLE="Idle",
+	WALK="Walk",
+	BACK="Back",
+	JUMP="Jump",
+	ATTACK="Fist Fight A",
+	LEFT="Walk",
+	RIGHT="Walk"
+}
 
 # ============================================================
 # READY
+# Runs once when the scene loads.
 # ============================================================
 
 func _ready():
 	if not anim:
-		push_error("AnimationPlayer NOT FOUND")
+		push_error("AnimationPlayer not found.")
 		return
 	
 	if not camera:
@@ -66,6 +79,7 @@ func _ready():
 	
 	anim.animation_finished.connect(_on_animation_finished)
 	floor_snap_length = 0.5
+	
 	_play_safe(Anim.IDLE)
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
@@ -73,7 +87,8 @@ func _ready():
 		spring_arm.spring_length = CAMERA_DISTANCE
 
 # ============================================================
-# INPUT
+# INPUT HANDLING
+# Handles mouse movement and ESC key toggling.
 # ============================================================
 
 func _input(e):
@@ -91,11 +106,13 @@ func _input(e):
 		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 
 # ============================================================
-# PHYSICS
+# PHYSICS PROCESS
+# Main movement, rotation, animation, and camera logic.
 # ============================================================
 
 func _physics_process(delta):
 	var grounded := is_on_floor()
+	
 	var f := Input.get_action_strength("move_forward")
 	var b := Input.get_action_strength("move_back")
 	var l := Input.get_action_strength("move_left")
@@ -112,12 +129,13 @@ func _physics_process(delta):
 		velocity.y = JUMP_FORCE
 		_play_safe(Anim.JUMP, 0.05)
 	
-	# Camera
+	# Camera update
 	_update_camera(delta)
 	
-	# Directions
+	# Camera-relative movement directions
 	var cf := Vector3.FORWARD
 	var cr := Vector3.RIGHT
+	
 	if camera:
 		cf = -camera.global_transform.basis.z
 		cr = camera.global_transform.basis.x
@@ -126,42 +144,45 @@ func _physics_process(delta):
 		cf = cf.normalized()
 		cr = cr.normalized()
 	
-	# Movement - Completely remove backward + left/right
+	# Movement direction
 	var dir := Vector3.ZERO
 	
-	# Forward only
 	if f > 0:
 		dir += cf
 	
-	# Backward only (no left/right combo)
-	if b > 0 and not (l > 0 or r > 0):
+	if b > 0:
 		if MOONWALK_ENABLED:
-			dir += -cf * MOONWALK_SPEED_MULTIPLIER
+			if not (l > 0 or r > 0):
+				dir += -cf * MOONWALK_SPEED_MULTIPLIER
+			elif l > 0 and not r > 0:
+				dir += (-cf - cr).normalized() * MOONWALK_SPEED_MULTIPLIER
+			elif r > 0 and not l > 0:
+				dir += (-cf + cr).normalized() * MOONWALK_SPEED_MULTIPLIER
 	
-	# Left only (no backward combo)
-	if l > 0 and not b > 0:
+	elif l > 0:
 		dir += -cr
 	
-	# Right only (no backward combo)
-	if r > 0 and not b > 0:
+	elif r > 0:
 		dir += cr
 	
 	if dir != Vector3.ZERO:
 		dir = dir.normalized()
 	
 	# Rotation
-	if MOONWALK_ENABLED and b > 0 and not (f > 0 or l > 0 or r > 0):
-		rotation.y = lerp_angle(rotation.y, atan2(cf.x, cf.z), delta * ROTATION_SPEED)
-	elif moving:
+	if b > 0 and MOONWALK_ENABLED:
+		var back_angle := atan2(cf.x, cf.z)
+		rotation.y = lerp_angle(rotation.y, back_angle, delta * ROTATION_SPEED)
+	elif dir != Vector3.ZERO:
 		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), delta * ROTATION_SPEED)
 	
 	# Velocity
 	if moving:
-		velocity.x = dir.x * (STRAFE_SPEED if (l > 0 or r > 0) else SPEED)
-		velocity.z = dir.z * SPEED
-		if MOONWALK_ENABLED and b > 0 and not (f > 0 or l > 0 or r > 0):
-			velocity.x *= MOONWALK_SPEED_MULTIPLIER
-			velocity.z *= MOONWALK_SPEED_MULTIPLIER
+		var base_speed := SPEED
+		if l > 0 or r > 0:
+			base_speed = STRAFE_SPEED
+		
+		velocity.x = dir.x * base_speed
+		velocity.z = dir.z * base_speed
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, SPEED * delta)
 		velocity.z = move_toward(velocity.z, 0.0, SPEED * delta)
@@ -174,14 +195,13 @@ func _physics_process(delta):
 	
 	move_and_slide()
 	
-	# Animation - FIXED: Restart animations after attack
+	# Animation state
 	if attacking:
 		return
 	
 	if not grounded:
 		_play_safe(Anim.JUMP)
 	elif moving:
-		# Check movement direction and play appropriate animation
 		if l > 0:
 			_play_safe(Anim.LEFT)
 		elif r > 0:
@@ -194,7 +214,8 @@ func _physics_process(delta):
 		_play_safe(Anim.IDLE)
 
 # ============================================================
-# CAMERA
+# CAMERA UPDATE
+# Smoothly interpolates camera rotation.
 # ============================================================
 
 func _update_camera(delta):
@@ -210,28 +231,25 @@ func _update_camera(delta):
 		spring_arm.rotation.y = cam_rot.x
 
 # ============================================================
-# ANIMATION - FORCED RESTART AFTER ATTACK
+# ANIMATION FINISHED
+# Resets attack state and resumes movement animations.
 # ============================================================
 
 func _on_animation_finished(n: String):
 	if n == Anim.ATTACK or n == "Fist Fight A" or n == "Fist Fight A/mixamo_com":
 		attacking = false
 		
-		# FORCE STOP and restart the animation system
 		anim.stop()
 		anim.seek(0.0, true)
 		
-		# Small delay to let the AnimationPlayer reset
 		await get_tree().create_timer(0.02).timeout
 		
-		# Check input and play appropriate animation
 		var f := Input.get_action_strength("move_forward")
 		var b := Input.get_action_strength("move_back")
 		var l := Input.get_action_strength("move_left")
 		var r := Input.get_action_strength("move_right")
 		var moving := f > 0 or b > 0 or l > 0 or r > 0
 		
-		# Immediately play the right animation based on input
 		if moving:
 			if l > 0:
 				_play_safe_forced(Anim.LEFT, 0.1)
@@ -245,7 +263,8 @@ func _on_animation_finished(n: String):
 			_play_safe_forced(Anim.IDLE, 0.1)
 
 # ============================================================
-# FORCED PLAY - Resets animation state completely
+# FORCED PLAY
+# Used after attack animations to reset state.
 # ============================================================
 
 func _play_safe_forced(name: String, blend: float = 0.1) -> void:
@@ -253,40 +272,35 @@ func _play_safe_forced(name: String, blend: float = 0.1) -> void:
 	if resolved == "":
 		return
 	
-	# Force stop and clear state
 	anim.stop()
 	anim.seek(0.0, true)
-	
-	# Reset current tracking
 	current = resolved
-	
-	# Play with forced blend
 	anim.play(resolved, blend)
 
 # ============================================================
-# SAFE PLAY - Normal animation playback
+# SAFE PLAY
+# Normal animation switching with blending.
 # ============================================================
 
 func _play_safe(name: String, blend: float = -1.0) -> void:
-	# Don't allow animation changes during attack
 	if attacking and name != Anim.ATTACK:
 		return
 	
 	var resolved := _resolve(name)
 	if resolved == "" or (current == resolved and anim.is_playing()):
 		return
+	
 	current = resolved
 	anim.play(resolved, blend if blend >= 0 else BLEND_TIME)
+
+# ============================================================
+# ANIMATION NAME RESOLVER
+# Finds correct animation name even if Mixamo adds suffixes.
+# ============================================================
 
 func _resolve(name: String) -> String:
 	if anim_cache.has(name):
 		return name
-	
-	for p in PREFIXES:
-		for s in SUFFIXES:
-			var full :String= p + name + s
-			if anim_cache.has(full):
-				return full
 	
 	for c in anim_cache.keys():
 		var lc :String= c.to_lower()
