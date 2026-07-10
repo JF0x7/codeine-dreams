@@ -229,8 +229,8 @@ func _update_camera(delta):
 # ANIMATION FINISHED
 # ============================================================
 func _on_animation_finished(n: String):
-	if n == Anim.ATTACK:
-		attacking = false
+	if "fist" in n.to_lower():attacking = false
+
 
 # ============================================================
 # SAFE PLAY (BLENDED)
