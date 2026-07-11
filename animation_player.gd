@@ -5,7 +5,7 @@ class_name JeremiahAnimator
 # EXPORTS
 # ============================================================
 
-@export var blend_time: float = 0.15
+@export var blend_time: float = 0.887
 @export var animation_speed: float = 1.0
 @export var self_blend_time: float = 0.1
 

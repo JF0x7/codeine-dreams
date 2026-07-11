@@ -4,11 +4,11 @@ class_name JeremiahController
 # ============================================================
 # MOVEMENT SETTINGS
 # ============================================================
-@export var SPEED: float = 4.0
+@export var SPEED: float = 3.77
 @export var STRAFE_SPEED: float = 5.0
 @export var ROTATION_SPEED: float = 5.0
 @export var JUMP_FORCE: float = 5.67
-@export var BLEND_TIME: float = 0.36
+@export var BLEND_TIME: float = 0.55
 
 # ============================================================
 # CAMERA SETTINGS
@@ -179,7 +179,7 @@ func _physics_process(delta):
 		if l > 0 or r > 0:
 			base_speed = STRAFE_SPEED
 
-		var accel := 20.0777
+		var accel := 20.087
 		velocity.x = move_toward(velocity.x, dir.x * base_speed, accel * delta)
 		velocity.z = move_toward(velocity.z, dir.z * base_speed, accel * delta)
 	else:
