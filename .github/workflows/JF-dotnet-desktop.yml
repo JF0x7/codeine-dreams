@@ -3,23 +3,18 @@ name: Oasis Windows Build
 on:
   push:
     branches: ["main"]        # Runs automatically when you push to main
-  workflow_dispatch:          # Lets you run it manually from GitHub Actions
+  workflow_dispatch:          # Lets you run it manually
 
 jobs:
   build:
-    runs-on: windows-latest   # Use a Windows runner (required for your build)
+    runs-on: windows-latest   # Use Windows runner
 
     steps:
-      # ---------------------------------------------------------
-      # 1. Pull your repository files onto the runner
-      # ---------------------------------------------------------
+      # 1. Download your repo into the runner
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # 2. Show where GitHub actually put your files
-      #    SUPER useful for debugging path issues
-      # ---------------------------------------------------------
+      # 2. Show where GitHub put your files (helps with debugging)
       - name: Debug workspace
         run: |
           echo "Workspace root:"
@@ -27,33 +22,23 @@ jobs:
           echo "Listing workspace:"
           dir ${{ github.workspace }}
 
-      # ---------------------------------------------------------
-      # 3. Install Node.js (version 24)
-      # ---------------------------------------------------------
+      # 3. Install Node.js
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      # ---------------------------------------------------------
-      # 4. Install your project's npm dependencies
-      #    IMPORTANT: Your real project lives inside /Oasis
-      # ---------------------------------------------------------
+      # 4. Install npm packages inside your Oasis folder
       - name: Install dependencies
         run: npm install
         working-directory: ${{ github.workspace }}\Oasis
 
-      # ---------------------------------------------------------
-      # 5. Run your build script (whatever "npm run build" does)
-      # ---------------------------------------------------------
+      # 5. Build your project
       - name: Build project
         run: npm run build
         working-directory: ${{ github.workspace }}\Oasis
 
-      # ---------------------------------------------------------
-      # 6. Make sure the Windows build folder actually exists
-      #    This prevents silent failures later
-      # ---------------------------------------------------------
+      # 6. Make sure the Windows build folder exists
       - name: Verify build output
         run: |
           if (!(Test-Path "${{ github.workspace }}\Oasis\build\windows")) {
@@ -64,10 +49,7 @@ jobs:
             dir ${{ github.workspace }}\Oasis\build\windows
           }
 
-      # ---------------------------------------------------------
-      # 7. Upload the Windows build as an artifact
-      #    You can download this from GitHub Actions later
-      # ---------------------------------------------------------
+      # 7. Upload your Windows build as an artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
