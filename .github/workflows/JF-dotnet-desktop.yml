@@ -17,7 +17,7 @@ jobs:
     - name: Create build folders
       shell: powershell
       run: |
-        New-Item -ItemType Directory -Force -Path "codeine-dreams/build/windows" | Out-Null
+        New-Item -ItemType Directory -Force -Path "codeine-dreams/codeine-dreams/build/windows" | Out-Null
 
     - name: Export Windows build
       shell: powershell
@@ -26,19 +26,19 @@ jobs:
           --headless `
           --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\codeine-dreams" `
           --export-release "Windows Desktop" `
-          "codeine-dreams/build/windows/CodeineDreams.exe"
+          "codeine-dreams/codeine-dreams/build/windows/CodeineDreams.exe"
 
     - name: Verify Windows build exists
       shell: powershell
       run: |
-        Write-Host "Checking codeine-dreams/build/windows directory..."
-        Get-ChildItem -Path "codeine-dreams/build/windows"
+        Write-Host "Checking codeine-dreams/codeine-dreams/build/windows directory..."
+        Get-ChildItem -Path "codeine-dreams/codeine-dreams/build/windows"
 
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
         name: windows-build
-        path: codeine-dreams/build/windows/
+        path: codeine-dreams/codeine-dreams/build/windows/
 
   publish-container:
     runs-on: ubuntu-latest
