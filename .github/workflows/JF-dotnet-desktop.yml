@@ -15,32 +15,24 @@ jobs:
       uses: actions/checkout@v4
 
     # ---------------------------------------------------------
-    # Install Godot from Ubuntu repos (works, no PPA needed)
-    # ---------------------------------------------------------
-    - name: Install Godot
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y godot3
-
-    # ---------------------------------------------------------
-    # Export Windows build
+    # Run Godot inside Docker (no downloads needed)
     # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
-        godot3 --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
+        docker run --rm \
+          -v $PWD:/project \
+          barichello/godot-ci:4.2.1 \
+          --headless --export-release "Windows Desktop" /project/build/windows/CodeineDreams.exe
 
-    # ---------------------------------------------------------
-    # Export Linux build
-    # ---------------------------------------------------------
     - name: Export Linux build
       run: |
         mkdir -p build/linux
-        godot3 --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
+        docker run --rm \
+          -v $PWD:/project \
+          barichello/godot-ci:4.2.1 \
+          --headless --export-release "Linux/X11" /project/build/linux/CodeineDreams.x86_64
 
-    # ---------------------------------------------------------
-    # Upload artifacts
-    # ---------------------------------------------------------
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
