@@ -15,14 +15,14 @@ jobs:
       uses: actions/checkout@v4
 
     # ---------------------------------------------------------
-    # Run Godot inside Docker (no downloads needed)
+    # Use official Godot Docker image (works in 2026)
     # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
         docker run --rm \
           -v $PWD:/project \
-          barichello/godot-ci:4.2.1 \
+          godotengine/godot:4.2 \
           --headless --export-release "Windows Desktop" /project/build/windows/CodeineDreams.exe
 
     - name: Export Linux build
@@ -30,7 +30,7 @@ jobs:
         mkdir -p build/linux
         docker run --rm \
           -v $PWD:/project \
-          barichello/godot-ci:4.2.1 \
+          godotengine/godot:4.2 \
           --headless --export-release "Linux/X11" /project/build/linux/CodeineDreams.x86_64
 
     - name: Upload artifacts
