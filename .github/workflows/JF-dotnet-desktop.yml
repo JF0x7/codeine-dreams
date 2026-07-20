@@ -7,53 +7,31 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
-
-    # ⭐ Force GitHub to use your REAL project directory on C:
-    defaults:
-      run:
-        working-directory: C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\Oasis
+    runs-on: ubuntu-latest     # Docker works best on Linux runners
 
     steps:
-      # 1. Pull your repo
+      # ---------------------------------------------------------
+      # 1. Pull your repository files
+      # ---------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Debug (shows your real folder)
-      - name: Debug workspace
+      # ---------------------------------------------------------
+      # 2. Export Windows build using Godot inside Docker
+      # ---------------------------------------------------------
+      - name: Export Windows Build (Godot Docker)
         run: |
-          echo "Using forced working directory:"
-          echo "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\Oasis"
-          dir .
+          mkdir -p ${{ github.workspace }}/Oasis/build/windows
+          docker run --rm \
+            -v ${{ github.workspace }}/Oasis:/project \
+            barichello/godot-ci:4.2.1 \
+            --headless --export-release "Windows Desktop" /project/build/windows/Oasis.exe
 
-      # 3. Install Node
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      # 4. Install npm packages
-      - name: Install dependencies
-        run: npm install
-
-      # 5. Build your project
-      - name: Build project
-        run: npm run build
-
-      # 6. Verify build output
-      - name: Verify build output
-        run: |
-          if (!(Test-Path "build/windows")) {
-            echo "❌ Build folder missing"
-            exit 1
-          } else {
-            echo "✅ Build folder found"
-            dir build/windows
-          }
-
-      # 7. Upload artifact
+      # ---------------------------------------------------------
+      # 3. Upload the Windows build
+      # ---------------------------------------------------------
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: oasis-build-win
-          path: build/windows/
+          path: Oasis/build/windows/
