@@ -1,4 +1,4 @@
-name: Oasis Multi-OS Build
+name: Oasis Windows Build
 
 on:
   push:
@@ -7,17 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-        include:
-          - os: windows-latest
-            os-short: win
-          - os: ubuntu-latest
-            os-short: linux
-          - os: macos-latest
-            os-short: mac
+    runs-on: windows-latest
 
     steps:
       - name: Checkout
@@ -28,24 +18,26 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install deps
+      - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build project
         run: npm run build
 
       - name: Verify build output
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if (!(Test-Path "build/windows")) {
+            echo "❌ Build folder missing: build/windows"
+            exit 1
+          } else {
+            echo "✅ Build folder found."
             dir build/windows
-          else
-            ls -R build/windows || exit 1
-          fi
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: oasis-build-${{ matrix.os-short }}
+          name: oasis-build-win
           path: build/windows/
 
   deploy:
@@ -53,13 +45,14 @@ jobs:
     needs: build
 
     steps:
-      - name: Download all artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          path: ./artifacts
+          name: oasis-build-win
+          path: ./artifact
 
-      - name: List artifacts
-        run: ls -R ./artifacts
+      - name: List artifact contents
+        run: ls -R ./artifact
 
       - name: Deploy
         uses: actions/deploy-pages@v4
