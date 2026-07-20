@@ -8,30 +8,21 @@ on:
 
 jobs:
   export:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # ---------------------------------------------------------
-    # Use official Godot Docker image (works in 2026)
-    # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
-        docker run --rm \
-          -v $PWD:/project \
-          godotengine/godot:4.2 \
-          --headless --export-release "Windows Desktop" /project/build/windows/CodeineDreams.exe
+        godot --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
 
     - name: Export Linux build
       run: |
         mkdir -p build/linux
-        docker run --rm \
-          -v $PWD:/project \
-          godotengine/godot:4.2 \
-          --headless --export-release "Linux/X11" /project/build/linux/CodeineDreams.x86_64
+        godot --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
