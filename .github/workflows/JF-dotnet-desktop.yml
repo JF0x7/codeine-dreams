@@ -27,11 +27,17 @@ jobs:
           --export-release "Windows Desktop" `
           "build/windows/CodeineDreams.exe"
 
+    - name: Verify Windows build exists
+      shell: powershell
+      run: |
+        Write-Host "Checking build/windows directory..."
+        Get-ChildItem -Path "build/windows"
+
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
         name: windows-build
-        path: build/windows/CodeineDreams.exe
+        path: build/windows/
 
   publish-container:
     runs-on: ubuntu-latest
