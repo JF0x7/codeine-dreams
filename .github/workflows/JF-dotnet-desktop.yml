@@ -30,7 +30,7 @@ jobs:
         cd codeine-dreams
         & "C:\Users\jerem\Downloads\JmoneyGodot_v4.8-dev1_win64.exe" `
           --headless `
-          --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\codeine-dreams" `
+          --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\" `
           --export-release "Windows Desktop" `
           "build/windows/CodeineDreams.exe"
 
