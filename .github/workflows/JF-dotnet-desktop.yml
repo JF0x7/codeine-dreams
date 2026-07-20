@@ -14,35 +14,29 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Move into project directory
+      shell: powershell
+      run: |
+        cd codeine-dreams
+
     - name: Create build folders
       shell: powershell
       run: |
         New-Item -ItemType Directory -Force -Path "build/windows" | Out-Null
 
-    - name: Detect Godot export preset
-      id: preset
-      shell: powershell
-      run: |
-        $cfg = Get-Content "export_presets.cfg"
-        $name = ($cfg | Select-String -Pattern 'name="' | ForEach-Object {
-            $_.ToString().Split('"')[1]
-        })[0]
-        Write-Host "Detected preset: $name"
-        echo "preset=$name" >> $env:GITHUB_OUTPUT
-
     - name: Export Windows build
       shell: powershell
       run: |
-        $preset = "${{ steps.preset.outputs.preset }}"
-        Write-Host "Using preset: $preset"
+        cd codeine-dreams
         & "C:\Users\jerem\Downloads\JmoneyGodot_v4.8-dev1_win64.exe" `
           --headless `
-          --export-release "$preset" `
+          --export-release "Windows Desktop" `
           "build/windows/CodeineDreams.exe"
 
     - name: Verify Windows build exists
       shell: powershell
       run: |
+        cd codeine-dreams
         Write-Host "Checking build/windows directory..."
         Get-ChildItem -Path "build/windows"
 
@@ -50,7 +44,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: windows-build
-        path: build/windows/
+        path: codeine-dreams/build/windows/
 
   publish-container:
     runs-on: ubuntu-latest
