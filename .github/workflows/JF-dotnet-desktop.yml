@@ -1,24 +1,33 @@
-name: Codeine-Dreams CI
+name: Codeine-Dreams CI (Windows)
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  export:
+  export-windows:
     runs-on: self-hosted
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Export Windows build
+    - name: Create build folders
+      shell: pwsh
       run: |
-        mkdir build
-        mkdir build/windows
-        "C:\Users\jerem\Godot\Godot_v4.2.1-stable_win64.exe" --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
+        New-Item -ItemType Directory -Force -Path build/windows | Out-Null
 
-    - name: Upload artifacts
+    - name: Export Windows build
+      shell: pwsh
+      run: |
+        & "C:\Users\jerem\Godot\Godot_v4.2.1-stable_win64.exe" `
+          --headless `
+          --export-release "Windows Desktop" `
+          "build/windows/CodeineDreams.exe"
+
+    - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
       with:
         name: Codeine-Dreams-Windows
