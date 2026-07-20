@@ -15,29 +15,28 @@ jobs:
       uses: actions/checkout@v4
 
     # ---------------------------------------------------------
-    # Download Godot Headless AppImage (small, reliable)
+    # Download Godot AppImage (this URL works)
     # ---------------------------------------------------------
-    - name: Download Godot Headless AppImage
+    - name: Download Godot AppImage
       run: |
-        wget https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_linux_headless.64.zip
-        unzip Godot_v4.2.1-stable_linux_headless.64.zip
-        chmod +x Godot_v4.2.1-stable_linux_headless.64
+        wget https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_x86_64.AppImage
+        chmod +x Godot_v4.2.1-stable_x86_64.AppImage
 
     # ---------------------------------------------------------
-    # Export Windows build (no templates needed)
+    # Export Windows build (auto-downloads templates)
     # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
-        ./Godot_v4.2.1-stable_linux_headless.64 --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
+        ./Godot_v4.2.1-stable_x86_64.AppImage --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
 
     # ---------------------------------------------------------
-    # Export Linux build (no templates needed)
+    # Export Linux build (auto-downloads templates)
     # ---------------------------------------------------------
     - name: Export Linux build
       run: |
         mkdir -p build/linux
-        ./Godot_v4.2.1-stable_linux_headless.64 --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
+        ./Godot_v4.2.1-stable_x86_64.AppImage --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
 
     # ---------------------------------------------------------
     # Upload artifacts
