@@ -22,7 +22,7 @@ jobs:
     - name: Export Windows build
       shell: powershell
       run: |
-        & "C:\Users\jerem\Godot\Godot_v4.2.1-stable_win64.exe" `
+        & "C:\Users\jerem\Downloads\Godot_v4.8-dev1_win64_console.exe" `
           --headless `
           --export-release "Windows Desktop" `
           "build/windows/CodeineDreams.exe"
