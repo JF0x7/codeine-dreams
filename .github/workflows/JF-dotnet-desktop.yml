@@ -14,30 +14,82 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download Godot
+    # ---------------------------------------------------------
+    # Download Godot Headless (robust with retries + fallback)
+    # ---------------------------------------------------------
+    - name: Download Godot (robust)
       run: |
-        curl -L -o Godot_v4.2.1-stable_linux_headless.64.zip https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_linux_headless.64.zip
-        unzip Godot_v4.2.1-stable_linux_headless.64.zip
+        echo "Downloading Godot Headless..."
+
+        # Try GitHub mirror first (5 retries)
+        for i in {1..5}; do
+          curl -L -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_linux_headless.64.zip && break
+          echo "Retry $i failed, retrying in 5s..."
+          sleep 5
+        done
+
+        # If file is too small, fallback to TuxFamily mirror
+        if [ $(stat -c%s godot.zip) -lt 100000 ]; then
+          echo "GitHub mirror failed, using TuxFamily fallback..."
+          curl -L -o godot.zip https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_linux_headless.64.zip
+        fi
+
+        # Validate again
+        if [ $(stat -c%s godot.zip) -lt 100000 ]; then
+          echo "ERROR: Godot download failed from all mirrors."
+          exit 1
+        fi
+
+        unzip godot.zip
         sudo mv Godot_v4.2.1-stable_linux_headless.64 /usr/local/bin/godot
 
+    # ---------------------------------------------------------
+    # Download export templates
+    # ---------------------------------------------------------
     - name: Download export templates
       run: |
-        curl -L -o Godot_v4.2.1-stable_export_templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_export_templates.tpz
+        curl -L -o templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_export_templates.tpz
         mkdir -p ~/.local/share/godot/export_templates/4.2.1.stable
-        tar -xf Godot_v4.2.1-stable_export_templates.tpz -C ~/.local/share/godot/export_templates/4.2.1.stable
+        tar -xf templates.tpz -C ~/.local/share/godot/export_templates/4.2.1.stable
 
+    # ---------------------------------------------------------
+    # Export Windows build
+    # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
         godot --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
 
+    # ---------------------------------------------------------
+    # Export Linux build
+    # ---------------------------------------------------------
     - name: Export Linux build
       run: |
         mkdir -p build/linux
         godot --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
 
+    # ---------------------------------------------------------
+    # Upload artifacts to GitHub
+    # ---------------------------------------------------------
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Codeine-Dreams-Builds
         path: build/
+
+    # ---------------------------------------------------------
+    # itch.io Upload (butler)
+    # ---------------------------------------------------------
+    - name: Install butler
+      run: |
+        curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/latest/archive/default
+        unzip butler.zip
+        sudo mv butler /usr/local/bin/butler
+
+    - name: Upload to itch.io
+      env:
+        BUTLER_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
+      run: |
+        echo "Uploading to itch.io..."
+        butler push build/windows jeremi/codeine-dreams:windows
+        butler push build/linux jeremi/codeine-dreams:linux
