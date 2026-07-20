@@ -76,20 +76,3 @@ jobs:
       with:
         name: Codeine-Dreams-Builds
         path: build/
-
-    # ---------------------------------------------------------
-    # itch.io Upload (butler)
-    # ---------------------------------------------------------
-    - name: Install butler
-      run: |
-        curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/latest/archive/default
-        unzip butler.zip
-        sudo mv butler /usr/local/bin/butler
-
-    - name: Upload to itch.io
-      env:
-        BUTLER_API_KEY: ${{ secrets.ITCH_IO_API_KEY }}
-      run: |
-        echo "Uploading to itch.io..."
-        butler push build/windows jeremi/codeine-dreams:windows
-        butler push build/linux jeremi/codeine-dreams:linux
