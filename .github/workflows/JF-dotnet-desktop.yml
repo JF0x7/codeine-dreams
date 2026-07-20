@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 24
 
-      # ⭐ Your project is inside /Oasis
+      # ⭐ FIX: Use workspace + Oasis
       - name: Install dependencies
         run: npm install
         working-directory: ${{ github.workspace }}\Oasis
