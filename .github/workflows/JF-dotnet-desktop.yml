@@ -15,42 +15,13 @@ jobs:
       uses: actions/checkout@v4
 
     # ---------------------------------------------------------
-    # Download Godot Headless (robust with retries + fallback)
+    # Install Godot from apt (no downloads, no timeouts)
     # ---------------------------------------------------------
-    - name: Download Godot (robust)
+    - name: Install Godot Headless
       run: |
-        echo "Downloading Godot Headless..."
-
-        # Try GitHub mirror first (5 retries)
-        for i in {1..5}; do
-          curl -L -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_linux_headless.64.zip && break
-          echo "Retry $i failed, retrying in 5s..."
-          sleep 5
-        done
-
-        # If file is too small, fallback to TuxFamily mirror
-        if [ $(stat -c%s godot.zip) -lt 100000 ]; then
-          echo "GitHub mirror failed, using TuxFamily fallback..."
-          curl -L -o godot.zip https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_linux_headless.64.zip
-        fi
-
-        # Validate again
-        if [ $(stat -c%s godot.zip) -lt 100000 ]; then
-          echo "ERROR: Godot download failed from all mirrors."
-          exit 1
-        fi
-
-        unzip godot.zip
-        sudo mv Godot_v4.2.1-stable_linux_headless.64 /usr/local/bin/godot
-
-    # ---------------------------------------------------------
-    # Download export templates
-    # ---------------------------------------------------------
-    - name: Download export templates
-      run: |
-        curl -L -o templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.2.1-stable/Godot_v4.2.1-stable_export_templates.tpz
-        mkdir -p ~/.local/share/godot/export_templates/4.2.1.stable
-        tar -xf templates.tpz -C ~/.local/share/godot/export_templates/4.2.1.stable
+        sudo add-apt-repository ppa:godotengine/ppa -y
+        sudo apt-get update
+        sudo apt-get install -y godot4-headless godot4-export-templates
 
     # ---------------------------------------------------------
     # Export Windows build
@@ -58,7 +29,7 @@ jobs:
     - name: Export Windows build
       run: |
         mkdir -p build/windows
-        godot --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
+        godot4 --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
 
     # ---------------------------------------------------------
     # Export Linux build
@@ -66,7 +37,7 @@ jobs:
     - name: Export Linux build
       run: |
         mkdir -p build/linux
-        godot --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
+        godot4 --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
 
     # ---------------------------------------------------------
     # Upload artifacts to GitHub
