@@ -1,73 +1,56 @@
-name: Codeine-Dreams CI
+name: Build and Deploy (Windows)
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  export-windows:
-    runs-on: self-hosted
+  build:
+    runs-on: windows-latest
+    env:
+      # Temporary flag if you must use Node 20
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Create build folders
-      shell: powershell
-      run: |
-        New-Item -ItemType Directory -Force -Path "codeine-dreams/codeine-dreams/build/windows" | Out-Null
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
-    - name: Export Windows build
-      shell: powershell
-      run: |
-        & "C:\Users\jerem\Downloads\JmoneyGodot_v4.8-dev1_win64.exe" `
-          --headless `
-          --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\codeine-dreams" `
-          --export-release "Windows Desktop" `
-          "codeine-dreams/codeine-dreams/build/windows/CodeineDreams.exe"
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Verify Windows build exists
-      shell: powershell
-      run: |
-        Write-Host "Checking codeine-dreams/codeine-dreams/build/windows directory..."
-        Get-ChildItem -Path "codeine-dreams/codeine-dreams/build/windows"
+      - name: Build project
+        run: npm run build
 
-    - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-build
-        path: codeine-dreams/codeine-dreams/build/windows/
+      - name: Verify build output
+        run: dir build\windows
 
-  publish-container:
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: build/windows/
+
+  deploy:
     runs-on: ubuntu-latest
-    needs: export-windows
-
-    permissions:
-      contents: read
-      packages: write
-
+    needs: build
     steps:
-    - name: Download Windows artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: windows-build
-        path: build/
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: ./windows-build
 
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build container image
-      run: |
-        docker build \
-          -t ghcr.io/jf0x7/codeine-dreams:${{ github.ref_name }} \
-          .
-
-    - name: Push container image
-      run: |
-        docker push ghcr.io/jf0x7/codeine-dreams:${{ github.ref_name }}
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
