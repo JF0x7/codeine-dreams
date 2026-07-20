@@ -1,3 +1,10 @@
+name: Oasis Windows Build
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
@@ -11,6 +18,7 @@ jobs:
         with:
           node-version: 24
 
+      # Your project lives inside the subfolder: codeine-dreams/
       - name: Install dependencies
         run: npm install
         working-directory: codeine-dreams
@@ -22,10 +30,10 @@ jobs:
       - name: Verify build output
         run: |
           if (!(Test-Path "codeine-dreams/build/windows")) {
-            echo "❌ Build folder missing"
+            echo "❌ Build folder missing: codeine-dreams/build/windows"
             exit 1
           } else {
-            echo "✅ Build folder found"
+            echo "✅ Build folder found."
             dir codeine-dreams/build/windows
           }
 
@@ -34,3 +42,20 @@ jobs:
         with:
           name: oasis-build-win
           path: codeine-dreams/build/windows/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oasis-build-win
+          path: ./artifact
+
+      - name: List artifact contents
+        run: ls -R ./artifact
+
+      - name: Deploy
+        uses: actions/deploy-pages@v4
