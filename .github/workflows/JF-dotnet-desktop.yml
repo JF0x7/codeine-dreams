@@ -1,4 +1,4 @@
-name: Codeine-Dreams CI (Windows)
+name: Codeine-Dreams CI
 
 on:
   push:
