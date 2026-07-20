@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout your repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2. Export Windows build using Godot inside Docker
       - name: Export Windows Build (Godot Docker)
         run: |
           mkdir -p ${{ github.workspace }}/Oasis/build/windows
           docker run --rm \
             -v ${{ github.workspace }}/Oasis:/project \
             barichello/godot-ci:4.2.1 \
-            --headless --export-release "Windows Desktop" /project/build/windows/Oasis.exe
+            godot --headless --path /project --export-release "Windows Desktop" /project/build/windows/Oasis.exe
 
+      # 3. Upload the Windows build
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
