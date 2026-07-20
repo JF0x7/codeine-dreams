@@ -14,11 +14,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup Godot
-      uses: godotengine/godot-ci@v4
-      with:
-        version: "4.2.1"
-        export-templates: true
+    - name: Download Godot
+      run: |
+        wget https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_linux_headless.64.zip
+        unzip Godot_v4.2.1-stable_linux_headless.64.zip
+        sudo mv Godot_v4.2.1-stable_linux_headless.64 /usr/local/bin/godot
+
+    - name: Download export templates
+      run: |
+        wget https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_export_templates.tpz
+        mkdir -p ~/.local/share/godot/export_templates/4.2.1.stable
+        tar -xf Godot_v4.2.1-stable_export_templates.tpz -C ~/.local/share/godot/export_templates/4.2.1.stable
 
     - name: Export Windows build
       run: |
