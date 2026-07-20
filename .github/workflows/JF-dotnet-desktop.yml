@@ -15,28 +15,28 @@ jobs:
       uses: actions/checkout@v4
 
     # ---------------------------------------------------------
-    # Download Godot AppImage (this URL works)
+    # Install Godot from Ubuntu repos (works, no PPA needed)
     # ---------------------------------------------------------
-    - name: Download Godot AppImage
+    - name: Install Godot
       run: |
-        wget https://downloads.tuxfamily.org/godotengine/4.2.1/Godot_v4.2.1-stable_x86_64.AppImage
-        chmod +x Godot_v4.2.1-stable_x86_64.AppImage
+        sudo apt-get update
+        sudo apt-get install -y godot3
 
     # ---------------------------------------------------------
-    # Export Windows build (auto-downloads templates)
+    # Export Windows build
     # ---------------------------------------------------------
     - name: Export Windows build
       run: |
         mkdir -p build/windows
-        ./Godot_v4.2.1-stable_x86_64.AppImage --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
+        godot3 --headless --export-release "Windows Desktop" build/windows/CodeineDreams.exe
 
     # ---------------------------------------------------------
-    # Export Linux build (auto-downloads templates)
+    # Export Linux build
     # ---------------------------------------------------------
     - name: Export Linux build
       run: |
         mkdir -p build/linux
-        ./Godot_v4.2.1-stable_x86_64.AppImage --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
+        godot3 --headless --export-release "Linux/X11" build/linux/CodeineDreams.x86_64
 
     # ---------------------------------------------------------
     # Upload artifacts
