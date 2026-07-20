@@ -19,12 +19,25 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path "build/windows" | Out-Null
 
+    - name: Detect Godot export preset
+      id: preset
+      shell: powershell
+      run: |
+        $cfg = Get-Content "export_presets.cfg"
+        $name = ($cfg | Select-String -Pattern 'name="' | ForEach-Object {
+            $_.ToString().Split('"')[1]
+        })[0]
+        Write-Host "Detected preset: $name"
+        echo "preset=$name" >> $env:GITHUB_OUTPUT
+
     - name: Export Windows build
       shell: powershell
       run: |
+        $preset = "${{ steps.preset.outputs.preset }}"
+        Write-Host "Using preset: $preset"
         & "C:\Users\jerem\Downloads\JmoneyGodot_v4.8-dev1_win64.exe" `
           --headless `
-          --export-release "Windows Desktop" `
+          --export-release "$preset" `
           "build/windows/CodeineDreams.exe"
 
     - name: Verify Windows build exists
