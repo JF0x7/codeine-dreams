@@ -31,12 +31,10 @@ jobs:
       # 4. Install npm packages inside your Oasis folder
       - name: Install dependencies
         run: npm install
-        working-directory: ${{ github.workspace }}\Oasis
 
       # 5. Build your project
       - name: Build project
         run: npm run build
-        working-directory: ${{ github.workspace }}\Oasis
 
       # 6. Make sure the Windows build folder exists
       - name: Verify build output
