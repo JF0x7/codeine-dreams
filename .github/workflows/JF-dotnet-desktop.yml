@@ -14,11 +14,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Move into project directory
-      shell: powershell
-      run: |
-        cd codeine-dreams
-
     - name: Create build folders
       shell: powershell
       run: |
@@ -27,19 +22,17 @@ jobs:
     - name: Export Windows build
       shell: powershell
       run: |
-        cd codeine-dreams
         & "C:\Users\jerem\Downloads\JmoneyGodot_v4.8-dev1_win64.exe" `
           --headless `
-          --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\" `
+          --path "C:\Users\jerem\actions-runner\JFgitWork\codeine-dreams\codeine-dreams" `
           --export-release "Windows Desktop" `
-          "build/windows/CodeineDreams.exe"
+          "codeine-dreams/build/windows/CodeineDreams.exe"
 
     - name: Verify Windows build exists
       shell: powershell
       run: |
-        cd codeine-dreams
-        Write-Host "Checking build/windows directory..."
-        Get-ChildItem -Path "build/windows"
+        Write-Host "Checking codeine-dreams/build/windows directory..."
+        Get-ChildItem -Path "codeine-dreams/build/windows"
 
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
